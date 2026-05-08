@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Q&A Practice Activity</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:      #07070f;
+      --surface: #0f0f1c;
+      --card:    #14142a;
+      --panel:   #0c0c18;
+      --red:     #e63946;
+      --gold:    #f4c542;
+      --white:   #f0f0f8;
+      --muted:   #7070a0;
+      --border:  rgba(230,57,70,0.35);
+      --line:    rgba(255,255,255,0.06);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--white);
+      font-family: 'Noto Sans JP', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image:
+        linear-gradient(rgba(230,57,70,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(230,57,70,0.04) 1px, transparent 1px);
+      background-size: 64px 64px;
+      pointer-events: none; z-index: 0;
+    }
+    body::after {
+      content: '';
+      position: fixed;
+      top: -30%; left: 50%; transform: translateX(-50%);
+      width: 800px; height: 600px;
+      background: radial-gradient(ellipse, rgba(230,57,70,0.08) 0%, transparent 70%);
+      pointer-events: none; z-index: 0;
+    }
+
+    /* ── Settings Button (fixed) ── */
+    .settings-btn {
+      position: fixed;
+      top: 20px; right: 20px;
+      z-index: 200;
+      width: 44px; height: 44px;
+      background: var(--surface);
+      border: 1.5px solid rgba(255,255,255,0.1);
+      border-radius: 50%;
+      color: var(--muted);
+      font-size: 1.2rem;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: color 0.2s, border-color 0.2s, transform 0.3s, background 0.2s;
+    }
+    .settings-btn:hover {
+      color: var(--white);
+      border-color: var(--border);
+      background: var(--card);
+      transform: rotate(45deg);
+    }
+    .settings-btn.open {
+      color: var(--red);
+      border-color: var(--red);
+      transform: rotate(90deg);
+    }
+
+    /* ── Overlay ── */
+    .settings-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.55);
+      backdrop-filter: blur(3px);
+      z-index: 300;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+    }
+    .settings-overlay.open {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    /* ── Settings Drawer ── */
+    .settings-drawer {
+      position: fixed;
+      top: 0; right: 0; bottom: 0;
+      width: min(440px, 100vw);
+      background: var(--panel);
+      border-left: 1.5px solid rgba(230,57,70,0.2);
+      box-shadow: -24px 0 80px rgba(0,0,0,0.6);
+      z-index: 400;
+      display: flex; flex-direction: column;
+      transform: translateX(100%);
+      transition: transform 0.38s cubic-bezier(0.4,0,0.2,1);
+    }
+    .settings-drawer.open {
+      transform: translateX(0);
+    }
+
+    .settings-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 20px 18px;
+      border-bottom: 1px solid var(--line);
+      flex-shrink: 0;
+      background: var(--bg);
+    }
+    .settings-title {
+      font-family: 'Dela Gothic One', sans-serif;
+      font-size: 1rem;
+      letter-spacing: 0.08em;
+      color: var(--white);
+    }
+    .settings-header-actions {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .s-reset-btn {
+      font-size: 0.68rem;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 6px;
+      padding: 6px 12px;
+      cursor: pointer;
+      font-family: 'Noto Sans JP', sans-serif;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .s-reset-btn:hover { color: var(--white); border-color: rgba(255,255,255,0.25); }
+
+    .s-close-btn {
+      width: 32px; height: 32px;
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 6px;
+      color: var(--muted);
+      font-size: 1rem;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: color 0.2s, border-color 0.2s, background 0.2s;
+    }
+    .s-close-btn:hover { color: var(--white); border-color: rgba(255,255,255,0.25); background: rgba(255,255,255,0.05); }
+
+    .settings-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 0 8px;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255,255,255,0.1) transparent;
+    }
+    .settings-body::-webkit-scrollbar { width: 4px; }
+    .settings-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+
+    .settings-footer {
+      padding: 14px 16px;
+      border-top: 1px solid var(--line);
+      flex-shrink: 0;
+      background: var(--bg);
+    }
+    .s-add-topic-btn {
+      width: 100%;
+      padding: 13px;
+      background: transparent;
+      border: 1.5px dashed rgba(230,57,70,0.35);
+      border-radius: 8px;
+      color: var(--red);
+      font-family: 'Dela Gothic One', sans-serif;
+      font-size: 0.85rem;
+      letter-spacing: 0.08em;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .s-add-topic-btn:hover {
+      background: rgba(230,57,70,0.07);
+      border-color: var(--red);
+    }
+
+    /* ── Topic Row in Settings ── */
+    .st-topic {
+      border-bottom: 1px solid var(--line);
+    }
+    .st-topic.expanded .st-topic-header {
+      border-left: 3px solid var(--red);
+      background: rgba(230,57,70,0.05);
+    }
+    .st-topic-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 16px 10px 14px;
+      border-left: 3px solid transparent;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+      user-select: none;
+    }
+    .st-topic-header:hover { background: rgba(255,255,255,0.03); }
+
+    .st-topic-name {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: var(--white);
+      font-family: 'Noto Sans JP', sans-serif;
+      font-size: 0.88rem;
+      font-weight: 500;
+      padding: 4px 8px;
+      border-radius: 4px;
+      outline: none;
+      transition: background 0.2s;
+      cursor: text;
+      min-width: 0;
+    }
+    .st-topic-name:hover { background: rgba(255,255,255,0.06); }
+    .st-topic-name:focus { background: rgba(255,255,255,0.08); cursor: text; }
+
+    .st-topic-q-count {
+      font-size: 0.65rem;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+
+    .st-chevron {
+      color: var(--muted);
+      font-size: 0.7rem;
+      flex-shrink: 0;
+      transition: transform 0.25s;
+      line-height: 1;
+    }
+    .expanded .st-chevron { transform: rotate(180deg); color: var(--red); }
+
+    .st-delete-topic {
+      width: 28px; height: 28px;
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      font-size: 1rem;
+      cursor: pointer;
+      border-radius: 4px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      transition: color 0.2s, background 0.2s;
+      line-height: 1;
+    }
+    .st-delete-topic:hover { color: var(--red); background: rgba(230,57,70,0.1); }
+
+    /* Expanded questions */
+    .st-questions {
+      display: none;
+      padding: 0 16px 12px 34px;
+      background: rgba(0,0,0,0.2);
+    }
+    .expanded .st-questions { display: block; }
+
+    .st-question {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 7px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+    }
+    .st-question:last-of-type { border-bottom: none; }
+
+    .st-q-num {
+      font-family: 'Dela Gothic One', sans-serif;
+      font-size: 0.85rem;
+      color: var(--red);
+      opacity: 0.4;
+      flex-shrink: 0;
+      width: 20px;
+      padding-top: 8px;
+      line-height: 1;
+    }
+
+    .st-q-input {
+      flex: 1;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 6px;
+      color: var(--white);
+      font-family: 'Noto Sans JP', sans-serif;
+      font-size: 0.8rem;
+      line-height: 1.55;
+      padding: 7px 10px;
+      resize: none;
+      outline: none;
+      overflow: hidden;
+      min-height: 36px;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .st-q-input:focus {
+      border-color: rgba(230,57,70,0.4);
+      background: rgba(255,255,255,0.06);
+    }
+
+    .st-delete-q {
+      width: 26px; height: 26px;
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      font-size: 0.85rem;
+      cursor: pointer;
+      border-radius: 4px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      margin-top: 5px;
+      transition: color 0.2s, background 0.2s;
+    }
+    .st-delete-q:hover { color: var(--red); background: rgba(230,57,70,0.1); }
+
+    .st-add-q-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 10px;
+      padding: 7px 10px;
+      background: transparent;
+      border: 1px dashed rgba(255,255,255,0.12);
+      border-radius: 6px;
+      color: var(--muted);
+      font-family: 'Noto Sans JP', sans-serif;
+      font-size: 0.75rem;
+      cursor: pointer;
+      width: 100%;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .st-add-q-btn:hover { color: var(--white); border-color: rgba(255,255,255,0.25); }
+
+    /* Empty state in settings */
+    .st-empty {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--muted);
+      font-size: 0.82rem;
+      line-height: 1.7;
+    }
+
+    /* ── Main Page ── */
+    .container {
+      position: relative; z-index: 1;
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 48px 24px 100px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 64px;
+    }
+    .eyebrow {
+      font-size: 0.68rem;
+      letter-spacing: 0.35em;
+      text-transform: uppercase;
+      color: var(--red);
+      margin-bottom: 16px;
+    }
+    .title {
+      font-family: 'Dela Gothic One', sans-serif;
+      font-size: clamp(2rem, 7vw, 3.8rem);
+      line-height: 1; letter-spacing: -0.02em;
+      background: linear-gradient(160deg, var(--white) 40%, var(--gold) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+      margin-bottom: 12px;
+    }
+    .subtitle {
+      font-family: 'Dela Gothic One', sans-serif;
+      font-size: clamp(0.9rem, 2.5vw, 1.2rem);
+      letter-spacing: 0.2em; color: var(--muted); text-transform: uppercase;
+    }
+    .hr { width: 48px; height: 3px; background: var(--red); margin: 24px auto 0; border-radius: 2px; }
+
+    /* Slot */
+    .slot-outer { margin-bottom: 8px; }
+    .slot-machine {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 16px;
+      padding: 40px 28px 36px;
+      text-align: center;
+      position: relative; overflow: hidden;
+      box-shadow: 0 0 0 1px rgba(230,57,70,0.08), 0 0 60px rgba(230,57,70,0.08), inset 0 0 40px rgba(0,0,0,0.4);
+    }
+    .slot-machine::before {
+      content: '';
+      position: absolute; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--red), transparent);
+      opacity: 0.5; animation: sweep 4s linear infinite; pointer-events: none;
+    }
+    @keyframes sweep {
+      0%   { top: 0;    opacity: 0; }
+      5%   { opacity: 0.6; }
+      95%  { opacity: 0.6; }
+      100% { top: 100%; opacity: 0; }
+    }
+    .c { position: absolute; width: 18px; height: 18px; border-color: var(--red); border-style: solid; opacity: 0.6; }
+    .c-tl { top: 10px; left: 10px;  border-width: 2px 0 0 2px; }
+    .c-tr { top: 10px; right: 10px; border-width: 2px 2px 0 0; }
+    .c-bl { bottom: 10px; left: 10px;  border-width: 0 0 2px 2px; }
+    .c-br { bottom: 10px; right: 10px; border-width: 0 2px 2px 0; }
+
+    .slot-label { font-size: 0.65rem; letter-spacing: 0.35em; text-transform: uppercase; color: var(--muted); margin-bottom: 20px; }
+    .slot-display {
+      font-family: 'Dela Gothic One', sans-serif;
+      font-size: clamp(1.6rem, 5.5vw, 2.8rem);
+      color: var(--white); min-height: 72px;
+      display: flex; align-items: center; justify-content: center;
+      letter-spacing: -0.01em; transition: color 0.15s;
+    }
+    .slot-display.idle    { color: var(--muted); font-size: clamp(1rem, 3vw, 1.4rem); letter-spacing: 0.05em; }
+    .slot-display.spinning { color: var(--gold); }
+    .slot-display.stopped  { color: var(--white); animation: pop 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards; }
+    @keyframes pop { 0% { transform: scale(0.75); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+
+    .topic-meta { display: flex; align-items: center; justify-content: space-between; padding: 10px 2px 0; }
+    .topic-count { font-size: 0.7rem; letter-spacing: 0.1em; color: var(--muted); }
+    .topic-prev  { font-size: 0.7rem; letter-spacing: 0.1em; color: var(--muted); text-align: right; }
+    .topic-prev span { color: var(--red); font-weight: 700; }
+
+    /* Spin Button */
+    .spin-btn {
+      display: flex; align-items: center; justify-content: center; gap: 14px;
+      width: 100%; padding: 22px 28px;
+      background: var(--red); color: #fff; border: none; border-radius: 10px;
+      font-family: 'Dela Gothic One', sans-serif;
+      font-size: clamp(1.1rem, 3vw, 1.5rem); letter-spacing: 0.08em;
+      cursor: pointer; position: relative; overflow: hidden; margin-top: 24px;
+      transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+      box-shadow: 0 6px 24px rgba(230,57,70,0.35);
+    }
+    .spin-btn .spin-icon { display: inline-block; font-size: 1.4em; transition: transform 0.6s; }
+    .spin-btn:hover { background: #ff4f5c; transform: translateY(-2px); box-shadow: 0 10px 32px rgba(230,57,70,0.45); }
+    .spin-btn:hover .spin-icon { transform: rotate(180deg); }
+    .spin-btn:active { transform: translateY(1px); box-shadow: 0 4px 16px rgba(230,57,70,0.35); }
+    .spin-btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: none; }
+    .spin-btn::after {
+      content: '';
+      position: absolute; top: 0; left: -100%; bottom: 0; width: 60%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
+      transform: skewX(-20deg); transition: left 0.5s;
+    }
+    .spin-btn:hover::after { left: 160%; }
+
+    /* Questions Card */
+    .questions-card { margin-top: 40px; display: none; opacity: 0; transform: translateY(24px); transition: opacity 0.4s ease, transform 0.4s ease; }
+    .questions-card.visible { display: block; opacity: 1; transform: translateY(0); }
+    .questions-card.showing { display: block; }
+    .card-inner { background: var(--card); border-radius: 16px; border: 1.5px solid var(--line); overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.4); }
+    .card-header { background: linear-gradient(135deg, var(--red) 0%, #c1121f 100%); padding: 20px 28px; display: flex; align-items: center; justify-content: space-between; }
+    .card-header-topic { font-family: 'Dela Gothic One', sans-serif; font-size: clamp(1rem, 3vw, 1.3rem); color: #fff; letter-spacing: 0.03em; }
+    .card-header-label { font-size: 0.65rem; letter-spacing: 0.3em; text-transform: uppercase; color: rgba(255,255,255,0.6); white-space: nowrap; }
+    .questions-body { padding: 8px 0; }
+    .question-item { display: flex; gap: 20px; align-items: flex-start; padding: 18px 28px; border-bottom: 1px solid var(--line); opacity: 0; transform: translateX(-12px); transition: opacity 0.35s ease, transform 0.35s ease, background 0.2s; }
+    .question-item:last-child { border-bottom: none; }
+    .question-item.visible { opacity: 1; transform: translateX(0); }
+    .question-item:hover { background: rgba(230,57,70,0.05); }
+    .q-num { font-family: 'Dela Gothic One', sans-serif; font-size: 1.3rem; color: var(--red); opacity: 0.5; flex-shrink: 0; width: 28px; padding-top: 1px; line-height: 1.5; }
+    .q-text { font-size: clamp(0.92rem, 2.2vw, 1.05rem); line-height: 1.65; color: var(--white); font-weight: 400; }
+
+    /* Topic pills */
+    .topics-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 48px; justify-content: center; }
+    .topic-pill { font-size: 0.72rem; letter-spacing: 0.04em; color: var(--muted); background: var(--surface); border: 1px solid rgba(255,255,255,0.07); border-radius: 100px; padding: 5px 14px; cursor: pointer; transition: color 0.2s, border-color 0.2s, background 0.2s; user-select: none; font-family: 'Noto Sans JP', sans-serif; }
+    .topic-pill:hover { color: var(--white); border-color: var(--border); background: var(--card); }
+    .topic-pill.active { color: #fff; background: var(--red); border-color: var(--red); }
+    .topics-label { width: 100%; text-align: center; font-size: 0.65rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+
+    /* Toast */
+    .toast {
+      position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(20px);
+      background: var(--card); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px;
+      padding: 10px 20px; font-size: 0.8rem; color: var(--white); z-index: 500;
+      opacity: 0; transition: opacity 0.3s, transform 0.3s; pointer-events: none;
+      white-space: nowrap;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+
+<!-- Settings Button -->
+<button class="settings-btn" id="settingsBtn" onclick="openSettings()" title="Settings">⚙</button>
+
+<!-- Overlay -->
+<div class="settings-overlay" id="settingsOverlay" onclick="closeSettings()"></div>
+
+<!-- Settings Drawer -->
+<div class="settings-drawer" id="settingsDrawer">
+  <div class="settings-header">
+    <div class="settings-title">⚙ &nbsp;Settings</div>
+    <div class="settings-header-actions">
+      <button class="s-reset-btn" onclick="confirmReset()">Reset Defaults</button>
+      <button class="s-close-btn" onclick="closeSettings()">✕</button>
+    </div>
+  </div>
+  <div class="settings-body" id="settingsBody"></div>
+  <div class="settings-footer">
+    <button class="s-add-topic-btn" onclick="addTopic()">+ Add New Topic</button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Main Content -->
+<div class="container">
+
+  <header>
+    <div class="eyebrow">Classroom Activity</div>
+    <div class="title">Q&amp;A Practice</div>
+    <div class="subtitle">Directing the Q&amp;A</div>
+    <div class="hr"></div>
+  </header>
+
+  <div class="slot-outer">
+    <div class="slot-machine">
+      <div class="c c-tl"></div><div class="c c-tr"></div>
+      <div class="c c-bl"></div><div class="c c-br"></div>
+      <div class="slot-label">Selected Topic</div>
+      <div class="slot-display idle" id="slotDisplay">Spin to pick a topic</div>
+    </div>
+    <div class="topic-meta">
+      <div class="topic-count" id="topicCount"></div>
+      <div class="topic-prev" id="topicPrev"></div>
+    </div>
+  </div>
+
+  <button class="spin-btn" id="spinBtn" onclick="spin()">
+    <span class="spin-icon">⟳</span>
+    <span id="spinLabel">SPIN</span>
+  </button>
+
+  <div class="questions-card" id="questionsCard">
+    <div class="card-inner">
+      <div class="card-header">
+        <div class="card-header-topic" id="cardTopic"></div>
+        <div class="card-header-label" id="cardLabel"></div>
+      </div>
+      <div class="questions-body">
+        <ul id="questionsList" style="list-style:none;"></ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="topics-row">
+    <div class="topics-label">Or choose a topic directly</div>
+  </div>
+  <div class="topics-row" id="pillsRow"></div>
+
+</div>
+
+<script>
+/* ═══════════════════════════════════════════
+   DEFAULT DATA
+═══════════════════════════════════════════ */
+const DEFAULTS = [
+  { name: "Hobbies", questions: ["What is your hobby?","How often do you (動詞 + 趣味)?","When did you start (動詞-ing + 趣味)?","Why do you enjoy (動詞-ing + 趣味)?"] },
+  { name: "Japanese Pop Culture", questions: ["What is your favorite manga or anime?","Who is your favorite character in (title name)?","How often do you read/watch (title name)?","Why do you like (title name)?"] },
+  { name: "Travel", questions: ["What is your best travel memory?","When did you travel there?","Why did you travel there?","Who did you travel with?"] },
+  { name: "Your Hometown", questions: ["Where is your hometown?","Where is the most popular place to visit in your hometown?","What do you dislike about your hometown?","Why do you like your hometown?"] },
+  { name: "Your Commute to School", questions: ["Could you walk to your elementary school?","How long does it take for you to travel from your home to OIT?","How do you commute to OIT? (for example, JR train)","What do you like to do while commuting to OIT?"] },
+  { name: "Seasons", questions: ["What is your favorite season?","What is your least favorite season?","What is a popular event during your favorite season?","Which do you prefer, osechi or Christmas cake?"] },
+  { name: "Family", questions: ["Do you have any brothers or sisters?","Where are your parents from?","How many cousins (いとこ) do you have?","Do you have any family pets? If yes: What type? What is its name? If no: What pet would you like to have?"] },
+  { name: "Future", questions: ["What job would you like to have in the future?","Where would you like to live in the future?","Would you like to have children in the future? If yes, how many?","Do you think humans will live on Mars in the future?"] },
+  { name: "Health", questions: ["How often do you exercise?","What exercise do you do?","Do you generally have a healthy diet?","What is your most unhealthy habit (習慣)?"] },
+  { name: "Food", questions: ["What's your favorite food?","Are there any foods that you dislike?","What foreign foods do you like?","Which do you prefer, takenoko no sato OR kinoko no yama?"] },
+  { name: "Fashion", questions: ["What's your favorite clothing brand?","How often do you go shopping for new clothes?","Do you prefer casual or formal clothes? Why?","Which do you prefer, UNIQLO or GU?"] },
+  { name: "Movies", questions: ["What's your favorite movie?","Why do you like it?","What was the last movie you saw in the cinema?","Who is your favorite actor / actress?"] },
+  { name: "Smartphones", questions: ["Which do you prefer, iPhone or Android?","What is your favorite smartphone application?","How much time do you spend on your smartphone in one day?","How old were you when you got your first smartphone?"] },
+  { name: "SNS & Internet", questions: ["Which SNS applications do you use? (X, Instagram, YouTube, Line, etc.)","Do you like to post pictures or videos online?","What do you like to watch on YouTube?","Which do you prefer, talking to friends online or in person?"] },
+  { name: "Miscellaneous Japan", questions: ["What is one difference between Osaka and Tokyo?","If you had to live in a prefecture outside of Kansai, where would you live?","Which historical figure do you like the most, Nobunaga, Hideyoshi, or Ieyasu?","Where would you recommend tourists visit in Japan?"] },
+  { name: "City Life vs. Country Life", questions: ["Which do you prefer, living in a big city or living in the countryside?","What is one advantage of living in a city?","What is one disadvantage of living in a city?","Do you think you can live in Tokyo? Why or why not?"] },
+  { name: "School Life", questions: ["What was your favorite subject in high school?","Who was your favorite teacher?","Did you belong to any clubs in school?","Did you like your school uniform?"] },
+  { name: "Animals", questions: ["What's your favorite animal?","What animal would you like to be?","What animal are you afraid of?","What animal's meat would you like to try to eat?"] }
+];
+
+/* ═══════════════════════════════════════════
+   STATE
+═══════════════════════════════════════════ */
+let topicsData = [];
+let spinning = false;
+let spinInterval = null;
+let lastTopic = null;
+let activePill = null;
+let expandedTopics = new Set(); // indices currently expanded in settings
+
+function deepClone(arr) { return JSON.parse(JSON.stringify(arr)); }
+
+function loadTopics() {
+  try {
+    const saved = localStorage.getItem('qa_practice_topics');
+    if (saved) topicsData = JSON.parse(saved);
+    else topicsData = deepClone(DEFAULTS);
+  } catch(e) {
+    topicsData = deepClone(DEFAULTS);
+  }
+}
+
+function saveTopics() {
+  try { localStorage.setItem('qa_practice_topics', JSON.stringify(topicsData)); } catch(e) {}
+}
+
+/* ═══════════════════════════════════════════
+   SETTINGS PANEL
+═══════════════════════════════════════════ */
+function openSettings() {
+  document.getElementById('settingsDrawer').classList.add('open');
+  document.getElementById('settingsOverlay').classList.add('open');
+  document.getElementById('settingsBtn').classList.add('open');
+  renderSettings();
+}
+
+function closeSettings() {
+  document.getElementById('settingsDrawer').classList.remove('open');
+  document.getElementById('settingsOverlay').classList.remove('open');
+  document.getElementById('settingsBtn').classList.remove('open');
+}
+
+function renderSettings() {
+  const body = document.getElementById('settingsBody');
+  body.innerHTML = '';
+
+  if (topicsData.length === 0) {
+    body.innerHTML = `<div class="st-empty">No topics yet.<br>Add one below!</div>`;
+    return;
+  }
+
+  topicsData.forEach((topic, ti) => {
+    const isExpanded = expandedTopics.has(ti);
+    const div = document.createElement('div');
+    div.className = 'st-topic' + (isExpanded ? ' expanded' : '');
+    div.dataset.ti = ti;
+
+    // Header row
+    const header = document.createElement('div');
+    header.className = 'st-topic-header';
+    header.innerHTML = `
+      <input class="st-topic-name" value="${escHtml(topic.name)}" placeholder="Topic name"
+             data-ti="${ti}" onclick="event.stopPropagation()">
+      <span class="st-topic-q-count">${topic.questions.length}Q</span>
+      <span class="st-chevron">▼</span>
+      <button class="st-delete-topic" data-ti="${ti}" title="Delete topic" onclick="event.stopPropagation(); deleteTopic(${ti})">✕</button>
+    `;
+    header.addEventListener('click', () => toggleExpand(ti));
+    header.querySelector('.st-topic-name').addEventListener('click', e => e.stopPropagation());
+    header.querySelector('.st-topic-name').addEventListener('input', e => {
+      topicsData[ti].name = e.target.value;
+      saveTopics();
+      refreshMainUI();
+    });
+
+    // Questions
+    const qs = document.createElement('div');
+    qs.className = 'st-questions';
+    topic.questions.forEach((q, qi) => {
+      const row = document.createElement('div');
+      row.className = 'st-question';
+      row.innerHTML = `
+        <span class="st-q-num">${qi + 1}</span>
+        <textarea class="st-q-input" rows="1" data-ti="${ti}" data-qi="${qi}">${escHtml(q)}</textarea>
+        <button class="st-delete-q" title="Delete question" onclick="deleteQuestion(${ti},${qi})">✕</button>
+      `;
+      const ta = row.querySelector('textarea');
+      autoResize(ta);
+      ta.addEventListener('input', () => {
+        autoResize(ta);
+        topicsData[ti].questions[qi] = ta.value;
+        saveTopics();
+        refreshMainUI();
+      });
+      qs.appendChild(row);
+    });
+
+    const addQBtn = document.createElement('button');
+    addQBtn.className = 'st-add-q-btn';
+    addQBtn.innerHTML = '+ Add Question';
+    addQBtn.onclick = () => addQuestion(ti);
+    qs.appendChild(addQBtn);
+
+    div.appendChild(header);
+    div.appendChild(qs);
+    body.appendChild(div);
+  });
+}
+
+function toggleExpand(ti) {
+  if (expandedTopics.has(ti)) expandedTopics.delete(ti);
+  else expandedTopics.add(ti);
+  // Toggle class directly without full re-render
+  const rows = document.querySelectorAll('.st-topic');
+  rows.forEach(row => {
+    const idx = parseInt(row.dataset.ti);
+    if (idx === ti) row.classList.toggle('expanded');
+  });
+}
+
+function addTopic() {
+  const newTopic = { name: 'New Topic', questions: [''] };
+  topicsData.push(newTopic);
+  expandedTopics.add(topicsData.length - 1);
+  saveTopics();
+  refreshMainUI();
+  renderSettings();
+  // Scroll settings body to bottom
+  const body = document.getElementById('settingsBody');
+  setTimeout(() => { body.scrollTop = body.scrollHeight; }, 50);
+  showToast('New topic added');
+}
+
+function deleteTopic(ti) {
+  const name = topicsData[ti].name;
+  topicsData.splice(ti, 1);
+  expandedTopics.clear(); // reset expanded state after index shift
+  saveTopics();
+  refreshMainUI();
+  renderSettings();
+  // If current display was this topic, clear it
+  if (lastTopic && lastTopic.name === name) {
+    clearDisplay();
+  }
+  showToast(`"${name}" removed`);
+}
+
+function addQuestion(ti) {
+  topicsData[ti].questions.push('');
+  saveTopics();
+  expandedTopics.add(ti);
+  renderSettings();
+  // Focus the new textarea
+  setTimeout(() => {
+    const body = document.getElementById('settingsBody');
+    const allTextareas = body.querySelectorAll(`.st-topic[data-ti="${ti}"] .st-q-input`);
+    const last = allTextareas[allTextareas.length - 1];
+    if (last) { last.focus(); last.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
+  }, 50);
+}
+
+function deleteQuestion(ti, qi) {
+  if (topicsData[ti].questions.length <= 1) {
+    showToast('A topic must have at least 1 question');
+    return;
+  }
+  topicsData[ti].questions.splice(qi, 1);
+  saveTopics();
+  refreshMainUI();
+  expandedTopics.add(ti);
+  renderSettings();
+}
+
+function confirmReset() {
+  if (confirm('Reset all topics to the original defaults? This will remove any custom topics and edits.')) {
+    topicsData = deepClone(DEFAULTS);
+    expandedTopics.clear();
+    saveTopics();
+    refreshMainUI();
+    renderSettings();
+    clearDisplay();
+    showToast('Reset to defaults');
+  }
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.max(36, el.scrollHeight) + 'px';
+}
+
+function escHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ═══════════════════════════════════════════
+   MAIN UI
+═══════════════════════════════════════════ */
+function refreshMainUI() {
+  updateTopicCount();
+  renderPills();
+}
+
+function updateTopicCount() {
+  const n = topicsData.length;
+  document.getElementById('topicCount').textContent = `${n} topic${n !== 1 ? 's' : ''} available`;
+}
+
+function renderPills() {
+  const row = document.getElementById('pillsRow');
+  row.innerHTML = '';
+  activePill = null;
+  topicsData.forEach((t, i) => {
+    const pill = document.createElement('button');
+    pill.className = 'topic-pill';
+    pill.textContent = t.name;
+    pill.addEventListener('click', () => {
+      if (spinning) return;
+      selectTopic(t);
+      setActivePill(pill);
+    });
+    row.appendChild(pill);
+  });
+}
+
+function setActivePill(el) {
+  if (activePill) activePill.classList.remove('active');
+  activePill = el;
+  if (el) el.classList.add('active');
+}
+
+function clearDisplay() {
+  const display = document.getElementById('slotDisplay');
+  display.className = 'slot-display idle';
+  display.textContent = 'Spin to pick a topic';
+  document.getElementById('questionsCard').classList.remove('visible');
+  document.getElementById('questionsCard').style.display = 'none';
+  document.getElementById('spinLabel').textContent = 'SPIN';
+  document.getElementById('topicPrev').innerHTML = '';
+  lastTopic = null;
+}
+
+function spin() {
+  if (spinning || topicsData.length === 0) return;
+  spinning = true;
+  setActivePill(null);
+
+  const btn = document.getElementById('spinBtn');
+  const display = document.getElementById('slotDisplay');
+  const card = document.getElementById('questionsCard');
+  const prev = document.getElementById('topicPrev');
+
+  btn.disabled = true;
+  card.classList.remove('visible');
+
+  const pool = lastTopic
+    ? topicsData.filter(t => t.name !== lastTopic.name)
+    : topicsData;
+  const finalPool = pool.length > 0 ? pool : topicsData;
+  const chosen = finalPool[Math.floor(Math.random() * finalPool.length)];
+
+  display.className = 'slot-display spinning';
+
+  const totalSpins = 22 + Math.floor(Math.random() * 10);
+  let count = 0;
+  let delay = 70;
+
+  function cycle() {
+    const rand = topicsData[Math.floor(Math.random() * topicsData.length)];
+    display.textContent = rand.name;
+    count++;
+
+    if (count >= totalSpins) {
+      clearInterval(spinInterval);
+      display.textContent = chosen.name;
+      display.className = 'slot-display stopped';
+      spinning = false;
+      btn.disabled = false;
+      document.getElementById('spinLabel').textContent = 'SPIN AGAIN';
+
+      if (lastTopic) prev.innerHTML = `Last: <span>${escHtml(lastTopic.name)}</span>`;
+      lastTopic = chosen;
+
+      // Re-find pill after render (pills may have been recreated)
+      const pills = document.querySelectorAll('.topic-pill');
+      const matchingPill = [...pills].find(p => p.textContent === chosen.name);
+      if (matchingPill) setActivePill(matchingPill);
+
+      showQuestions(chosen);
+      return;
+    }
+
+    if (count > totalSpins - 7) {
+      clearInterval(spinInterval);
+      delay += 55;
+      spinInterval = setInterval(cycle, delay);
+    }
+  }
+
+  spinInterval = setInterval(cycle, delay);
+}
+
+function selectTopic(topic) {
+  const display = document.getElementById('slotDisplay');
+  const prev = document.getElementById('topicPrev');
+  if (lastTopic) prev.innerHTML = `Last: <span>${escHtml(lastTopic.name)}</span>`;
+  lastTopic = topic;
+  display.className = 'slot-display stopped';
+  display.textContent = topic.name;
+  document.getElementById('spinLabel').textContent = 'SPIN';
+  showQuestions(topic);
+}
+
+function showQuestions(topic) {
+  const card = document.getElementById('questionsCard');
+  const cardTopic = document.getElementById('cardTopic');
+  const cardLabel = document.getElementById('cardLabel');
+  const list = document.getElementById('questionsList');
+
+  cardTopic.textContent = topic.name;
+  const qCount = topic.questions.filter(q => q.trim()).length;
+  cardLabel.textContent = `${qCount} Question${qCount !== 1 ? 's' : ''}`;
+  list.innerHTML = '';
+
+  topic.questions.filter(q => q.trim()).forEach((q, i) => {
+    const li = document.createElement('li');
+    li.className = 'question-item';
+    li.innerHTML = `<span class="q-num">${i + 1}</span><span class="q-text">${escHtml(q)}</span>`;
+    list.appendChild(li);
+  });
+
+  card.classList.add('showing');
+  card.style.display = 'block';
+  card.style.opacity = '0';
+  card.style.transform = 'translateY(24px)';
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      card.style.transition = 'opacity 0.45s ease, transform 0.45s ease';
+      card.style.opacity = '1';
+      card.style.transform = 'translateY(0)';
+      card.classList.add('visible');
+      const items = list.querySelectorAll('.question-item');
+      items.forEach((item, i) => setTimeout(() => item.classList.add('visible'), 160 + i * 110));
+      setTimeout(() => card.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100);
+    });
+  });
+}
+
+/* ═══════════════════════════════════════════
+   TOAST
+═══════════════════════════════════════════ */
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+/* ═══════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════ */
+loadTopics();
+refreshMainUI();
+</script>
+</body>
+</html>

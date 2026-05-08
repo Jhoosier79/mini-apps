@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>J's Mini Apps</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Noto+Sans+JP:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:      #07070f;
+      --surface: #0f0f1c;
+      --card:    #131320;
+      --red:     #e63946;
+      --gold:    #f4c542;
+      --white:   #f0f0f8;
+      --muted:   #7070a0;
+      --line:    rgba(255,255,255,0.06);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--white);
+      font-family: 'Noto Sans JP', sans-serif;
+      min-height: 100vh;
+    }
+
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image:
+        linear-gradient(rgba(230,57,70,0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(230,57,70,0.035) 1px, transparent 1px);
+      background-size: 64px 64px;
+      pointer-events: none; z-index: 0;
+    }
+
+    .page {
+      position: relative; z-index: 1;
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 72px 28px 100px;
+    }
+
+    /* ── Header ── */
+    header { margin-bottom: 72px; }
+
+    .header-top {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+
+    .logo-block {}
+
+    .logo-eyebrow {
+      font-size: 0.65rem;
+      letter-spacing: 0.4em;
+      text-transform: uppercase;
+      color: var(--red);
+      margin-bottom: 10px;
+    }
+
+    .logo-title {
+      font-family: 'Dela Gothic One', sans-serif;
+      font-size: clamp(2.2rem, 6vw, 4rem);
+      line-height: 1;
+      letter-spacing: -0.02em;
+      background: linear-gradient(150deg, var(--white) 30%, var(--gold) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .app-count {
+      font-size: 0.72rem;
+      letter-spacing: 0.15em;
+      color: var(--muted);
+      text-transform: uppercase;
+      padding-bottom: 8px;
+    }
+
+    .header-rule {
+      margin-top: 28px;
+      height: 1px;
+      background: linear-gradient(90deg, var(--red) 0%, rgba(230,57,70,0.15) 40%, transparent 100%);
+    }
+
+    /* ── Grid ── */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+    }
+
+    /* ── App Card ── */
+    .app-card {
+      background: var(--card);
+      border: 1.5px solid var(--line);
+      border-radius: 16px;
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      text-decoration: none;
+      color: inherit;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.25s, transform 0.2s, box-shadow 0.25s;
+    }
+
+    .app-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: var(--card-accent, var(--red));
+      opacity: 0;
+      transition: opacity 0.25s;
+    }
+
+    .app-card:hover {
+      border-color: rgba(255,255,255,0.14);
+      transform: translateY(-3px);
+      box-shadow: 0 16px 48px rgba(0,0,0,0.4);
+    }
+
+    .app-card:hover::before { opacity: 1; }
+
+    .card-icon {
+      font-size: 2rem;
+      line-height: 1;
+      user-select: none;
+    }
+
+    .card-tag {
+      display: inline-block;
+      font-size: 0.62rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--card-accent, var(--red));
+      background: color-mix(in srgb, var(--card-accent, var(--red)) 12%, transparent);
+      border: 1px solid color-mix(in srgb, var(--card-accent, var(--red)) 30%, transparent);
+      border-radius: 100px;
+      padding: 4px 12px;
+      width: fit-content;
+    }
+
+    .card-title {
+      font-family: 'Dela Gothic One', sans-serif;
+      font-size: 1.15rem;
+      letter-spacing: 0.01em;
+      line-height: 1.2;
+      color: var(--white);
+    }
+
+    .card-desc {
+      font-size: 0.82rem;
+      line-height: 1.65;
+      color: var(--muted);
+      flex: 1;
+    }
+
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: 4px;
+      border-top: 1px solid var(--line);
+    }
+
+    .card-launch {
+      font-size: 0.72rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--card-accent, var(--red));
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: gap 0.2s;
+    }
+
+    .app-card:hover .card-launch { gap: 10px; }
+
+    .card-arrow {
+      font-size: 1rem;
+      line-height: 1;
+    }
+
+    .card-filename {
+      font-size: 0.62rem;
+      color: rgba(112,112,160,0.5);
+      font-family: monospace;
+      letter-spacing: 0.02em;
+    }
+
+    /* ── Footer ── */
+    footer {
+      margin-top: 80px;
+      text-align: center;
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      color: rgba(112,112,160,0.4);
+      text-transform: uppercase;
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <div class="header-top">
+      <div class="logo-block">
+        <div class="logo-eyebrow">Mini Apps</div>
+        <div class="logo-title">J's Mini Apps</div>
+      </div>
+      <div class="app-count" id="appCount"></div>
+    </div>
+    <div class="header-rule"></div>
+  </header>
+
+  <div class="grid" id="grid"></div>
+
+  <footer>J's Mini Apps &nbsp;·&nbsp; GitHub Pages</footer>
+
+</div>
+
+<script>
+  /*
+  ═══════════════════════════════════════════════════════
+    ADD NEW APPS HERE
+    Copy one of the objects below and fill in your values.
+
+    Fields:
+      title    — App name (required)
+      desc     — Short description shown on the card (required)
+      url      — Filename or path, e.g. "my_app.html" (required)
+      icon     — Emoji shown at the top of the card (required)
+      tag      — Category label, e.g. "Education", "Tools" (required)
+      accent   — Hex color for the card's accent line and tag
+                 Defaults to red (#e63946) if omitted.
+  ═══════════════════════════════════════════════════════
+  */
+  const apps = [
+    {
+      title:  "Q&A Practice Activity",
+      desc:   "Classroom randomizer for directing English conversation Q&A sessions. 18 built-in topics, fully customizable with a settings panel.",
+      url:    "qa_practice_activity.html",
+      icon:   "🎯",
+      tag:    "Education",
+      accent: "#e63946"
+    },
+
+    /* ── Add more apps below this line ─────────────────
+    {
+      title:  "My Next App",
+      desc:   "A short description of what this app does.",
+      url:    "my_next_app.html",
+      icon:   "✏️",
+      tag:    "Tools",
+      accent: "#3a86ff"
+    },
+    ──────────────────────────────────────────────────── */
+  ];
+
+  /* ── Render ── */
+  const grid = document.getElementById('grid');
+  const count = document.getElementById('appCount');
+
+  count.textContent = `${apps.length} app${apps.length !== 1 ? 's' : ''}`;
+
+  apps.forEach(app => {
+    const accent = app.accent || '#e63946';
+    const card = document.createElement('a');
+    card.href = app.url;
+    card.className = 'app-card';
+    card.style.setProperty('--card-accent', accent);
+    card.innerHTML = `
+      <div class="card-icon">${app.icon}</div>
+      <div class="card-tag">${app.tag}</div>
+      <div class="card-title">${app.title}</div>
+      <p class="card-desc">${app.desc}</p>
+      <div class="card-footer">
+        <span class="card-launch">Launch <span class="card-arrow">→</span></span>
+        <span class="card-filename">${app.url}</span>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+</script>
+</body>
+</html>
