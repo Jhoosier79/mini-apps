@@ -9,10 +9,10 @@
   <link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg:      #07070f;
-      --surface: #0f0f1c;
-      --card:    #14142a;
-      --panel:   #0c0c18;
+      --bg:      #000000;
+      --surface: #0a0a0a;
+      --card:    #111111;
+      --panel:   #0f0f0f;
       --red:     #e63946;
       --gold:    #f4c542;
       --white:   #f0f0f8;
@@ -35,17 +35,9 @@
       content: '';
       position: fixed; inset: 0;
       background-image:
-        linear-gradient(rgba(230,57,70,0.04) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(230,57,70,0.04) 1px, transparent 1px);
+        linear-gradient(rgba(230,57,70,0.12) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(230,57,70,0.12) 1px, transparent 1px);
       background-size: 64px 64px;
-      pointer-events: none; z-index: 0;
-    }
-    body::after {
-      content: '';
-      position: fixed;
-      top: -30%; left: 50%; transform: translateX(-50%);
-      width: 800px; height: 600px;
-      background: radial-gradient(ellipse, rgba(230,57,70,0.08) 0%, transparent 70%);
       pointer-events: none; z-index: 0;
     }
 
@@ -98,7 +90,7 @@
       width: min(440px, 100vw);
       background: var(--panel);
       border-left: 1.5px solid rgba(230,57,70,0.2);
-      box-shadow: -24px 0 80px rgba(0,0,0,0.6);
+      box-shadow: -24px 0 80px rgba(0,0,0,0.8);
       z-index: 400;
       display: flex; flex-direction: column;
       transform: translateX(100%);
@@ -261,7 +253,7 @@
     .st-questions {
       display: none;
       padding: 0 16px 12px 34px;
-      background: rgba(0,0,0,0.2);
+      background: rgba(255,255,255,0.02);
     }
     .expanded .st-questions { display: block; }
 
@@ -371,8 +363,7 @@
       font-family: 'Dela Gothic One', sans-serif;
       font-size: clamp(2rem, 7vw, 3.8rem);
       line-height: 1; letter-spacing: -0.02em;
-      background: linear-gradient(160deg, var(--white) 40%, var(--gold) 100%);
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+      color: var(--gold);
       margin-bottom: 12px;
     }
     .subtitle {
@@ -391,7 +382,6 @@
       padding: 40px 28px 36px;
       text-align: center;
       position: relative; overflow: hidden;
-      box-shadow: 0 0 0 1px rgba(230,57,70,0.08), 0 0 60px rgba(230,57,70,0.08), inset 0 0 40px rgba(0,0,0,0.4);
     }
     .slot-machine::before {
       content: '';
@@ -438,13 +428,12 @@
       font-size: clamp(1.1rem, 3vw, 1.5rem); letter-spacing: 0.08em;
       cursor: pointer; position: relative; overflow: hidden; margin-top: 24px;
       transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
-      box-shadow: 0 6px 24px rgba(230,57,70,0.35);
     }
     .spin-btn .spin-icon { display: inline-block; font-size: 1.4em; transition: transform 0.6s; }
-    .spin-btn:hover { background: #ff4f5c; transform: translateY(-2px); box-shadow: 0 10px 32px rgba(230,57,70,0.45); }
+    .spin-btn:hover { background: #ff4f5c; transform: translateY(-2px); }
     .spin-btn:hover .spin-icon { transform: rotate(180deg); }
-    .spin-btn:active { transform: translateY(1px); box-shadow: 0 4px 16px rgba(230,57,70,0.35); }
-    .spin-btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: none; }
+    .spin-btn:active { transform: translateY(1px); }
+    .spin-btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
     .spin-btn::after {
       content: '';
       position: absolute; top: 0; left: -100%; bottom: 0; width: 60%;
@@ -457,7 +446,7 @@
     .questions-card { margin-top: 40px; display: none; opacity: 0; transform: translateY(24px); transition: opacity 0.4s ease, transform 0.4s ease; }
     .questions-card.visible { display: block; opacity: 1; transform: translateY(0); }
     .questions-card.showing { display: block; }
-    .card-inner { background: var(--card); border-radius: 16px; border: 1.5px solid var(--line); overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.4); }
+    .card-inner { background: var(--card); border-radius: 16px; border: 1.5px solid var(--line); overflow: hidden; }
     .card-header { background: linear-gradient(135deg, var(--red) 0%, #c1121f 100%); padding: 20px 28px; display: flex; align-items: center; justify-content: space-between; }
     .card-header-topic { font-family: 'Dela Gothic One', sans-serif; font-size: clamp(1rem, 3vw, 1.3rem); color: #fff; letter-spacing: 0.03em; }
     .card-header-label { font-size: 0.65rem; letter-spacing: 0.3em; text-transform: uppercase; color: rgba(255,255,255,0.6); white-space: nowrap; }
@@ -465,7 +454,7 @@
     .question-item { display: flex; gap: 20px; align-items: flex-start; padding: 18px 28px; border-bottom: 1px solid var(--line); opacity: 0; transform: translateX(-12px); transition: opacity 0.35s ease, transform 0.35s ease, background 0.2s; }
     .question-item:last-child { border-bottom: none; }
     .question-item.visible { opacity: 1; transform: translateX(0); }
-    .question-item:hover { background: rgba(230,57,70,0.05); }
+    .question-item:hover { background: rgba(230,57,70,0.1); }
     .q-num { font-family: 'Dela Gothic One', sans-serif; font-size: 1.3rem; color: var(--red); opacity: 0.5; flex-shrink: 0; width: 28px; padding-top: 1px; line-height: 1.5; }
     .q-text { font-size: clamp(0.92rem, 2.2vw, 1.05rem); line-height: 1.65; color: var(--white); font-weight: 400; }
 
@@ -489,13 +478,10 @@
 </head>
 <body>
 
-<!-- Settings Button -->
 <button class="settings-btn" id="settingsBtn" onclick="openSettings()" title="Settings">⚙</button>
 
-<!-- Overlay -->
 <div class="settings-overlay" id="settingsOverlay" onclick="closeSettings()"></div>
 
-<!-- Settings Drawer -->
 <div class="settings-drawer" id="settingsDrawer">
   <div class="settings-header">
     <div class="settings-title">⚙ &nbsp;Settings</div>
@@ -510,10 +496,8 @@
   </div>
 </div>
 
-<!-- Toast -->
 <div class="toast" id="toast"></div>
 
-<!-- Main Content -->
 <div class="container">
 
   <header>
@@ -593,7 +577,7 @@ let spinning = false;
 let spinInterval = null;
 let lastTopic = null;
 let activePill = null;
-let expandedTopics = new Set(); // indices currently expanded in settings
+let expandedTopics = new Set();
 
 function deepClone(arr) { return JSON.parse(JSON.stringify(arr)); }
 
@@ -697,7 +681,6 @@ function renderSettings() {
 function toggleExpand(ti) {
   if (expandedTopics.has(ti)) expandedTopics.delete(ti);
   else expandedTopics.add(ti);
-  // Toggle class directly without full re-render
   const rows = document.querySelectorAll('.st-topic');
   rows.forEach(row => {
     const idx = parseInt(row.dataset.ti);
@@ -712,7 +695,6 @@ function addTopic() {
   saveTopics();
   refreshMainUI();
   renderSettings();
-  // Scroll settings body to bottom
   const body = document.getElementById('settingsBody');
   setTimeout(() => { body.scrollTop = body.scrollHeight; }, 50);
   showToast('New topic added');
@@ -721,11 +703,10 @@ function addTopic() {
 function deleteTopic(ti) {
   const name = topicsData[ti].name;
   topicsData.splice(ti, 1);
-  expandedTopics.clear(); // reset expanded state after index shift
+  expandedTopics.clear();
   saveTopics();
   refreshMainUI();
   renderSettings();
-  // If current display was this topic, clear it
   if (lastTopic && lastTopic.name === name) {
     clearDisplay();
   }
@@ -737,7 +718,6 @@ function addQuestion(ti) {
   saveTopics();
   expandedTopics.add(ti);
   renderSettings();
-  // Focus the new textarea
   setTimeout(() => {
     const body = document.getElementById('settingsBody');
     const allTextareas = body.querySelectorAll(`.st-topic[data-ti="${ti}"] .st-q-input`);
@@ -867,7 +847,6 @@ function spin() {
       if (lastTopic) prev.innerHTML = `Last: <span>${escHtml(lastTopic.name)}</span>`;
       lastTopic = chosen;
 
-      // Re-find pill after render (pills may have been recreated)
       const pills = document.querySelectorAll('.topic-pill');
       const matchingPill = [...pills].find(p => p.textContent === chosen.name);
       if (matchingPill) setActivePill(matchingPill);
