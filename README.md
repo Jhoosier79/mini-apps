@@ -1,1 +1,1 @@
-https://github.com/Jhoosier79/mini-apps/blob/main/index.html
+https://jhoosier79.github.io/mini-apps/
