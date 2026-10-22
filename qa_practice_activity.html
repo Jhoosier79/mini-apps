@@ -16,7 +16,7 @@
       --red:     #e63946;
       --gold:    #f4c542;
       --white:   #f0f0f8;
-      --muted:   #7070a0;
+      --muted:   #b4b4cc;
       --border:  rgba(230,57,70,0.35);
       --line:    rgba(255,255,255,0.06);
     }
@@ -48,7 +48,7 @@
       z-index: 200;
       width: 44px; height: 44px;
       background: var(--surface);
-      border: 1.5px solid rgba(255,255,255,0.1);
+      border: 1.5px solid rgba(255,255,255,0.22);
       border-radius: 50%;
       color: var(--muted);
       font-size: 1.2rem;
@@ -340,6 +340,53 @@
       line-height: 1.7;
     }
 
+    /* ── Question Set Panel ── */
+    .set-panel {
+      padding: 14px 16px 16px;
+      border-bottom: 1px solid var(--line);
+      flex-shrink: 0;
+      background: var(--surface);
+    }
+    .set-label {
+      font-size: 0.65rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .set-row { display: flex; gap: 8px; align-items: center; }
+    .set-select, .set-name {
+      flex: 1;
+      min-width: 0;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 6px;
+      color: var(--white);
+      font-family: 'Noto Sans JP', sans-serif;
+      font-size: 0.85rem;
+      padding: 7px 10px;
+      outline: none;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .set-select option { background: var(--panel); color: var(--white); }
+    .set-select:focus, .set-name:focus { border-color: rgba(230,57,70,0.4); background: rgba(255,255,255,0.06); }
+    .set-name { margin-top: 8px; width: 100%; }
+    .set-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+    .set-btn {
+      font-size: 0.7rem;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 6px;
+      padding: 6px 10px;
+      cursor: pointer;
+      font-family: 'Noto Sans JP', sans-serif;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .set-btn:hover { color: var(--white); border-color: rgba(255,255,255,0.3); }
+    .set-btn.danger:hover { color: var(--red); border-color: var(--red); }
+
     /* ── Main Page ── */
     .container {
       position: relative; z-index: 1;
@@ -405,10 +452,14 @@
     .slot-display {
       font-family: 'Dela Gothic One', sans-serif;
       font-size: clamp(1.6rem, 5.5vw, 2.8rem);
-      color: var(--white); min-height: 72px;
+      color: var(--white);
+      /* Fixed height (room for 2 lines) so the box never changes size;
+         fitSlotText() shrinks the text to fit. */
+      height: clamp(76px, 19vw, 104px); line-height: 1.15; overflow: hidden;
       display: flex; align-items: center; justify-content: center;
       letter-spacing: -0.01em; transition: color 0.15s;
     }
+    .slot-text { display: block; max-width: 100%; white-space: nowrap; overflow-wrap: anywhere; }
     .slot-display.idle    { color: var(--muted); font-size: clamp(1rem, 3vw, 1.4rem); letter-spacing: 0.05em; }
     .slot-display.spinning { color: var(--gold); }
     .slot-display.stopped  { color: var(--white); animation: pop 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards; }
@@ -419,28 +470,23 @@
     .topic-prev  { font-size: 0.7rem; letter-spacing: 0.1em; color: var(--muted); text-align: right; }
     .topic-prev span { color: var(--red); font-weight: 700; }
 
-    /* Spin Button */
-    .spin-btn {
-      display: flex; align-items: center; justify-content: center; gap: 14px;
-      width: 100%; padding: 22px 28px;
-      background: var(--red); color: #fff; border: none; border-radius: 10px;
-      font-family: 'Dela Gothic One', sans-serif;
-      font-size: clamp(1.1rem, 3vw, 1.5rem); letter-spacing: 0.08em;
-      cursor: pointer; position: relative; overflow: hidden; margin-top: 24px;
-      transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+    /* Spinner box is the spin control */
+    .slot-machine { cursor: pointer; user-select: none; -webkit-tap-highlight-color: transparent; transition: border-color 0.2s, background 0.2s, transform 0.15s; }
+    .slot-machine:hover { border-color: var(--red); background: #0e0e0e; }
+    .slot-machine:active { transform: scale(0.99); }
+    .slot-machine:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+    .slot-machine.busy { cursor: wait; }
+    .slot-machine.busy:hover { border-color: var(--border); background: var(--surface); }
+    .slot-machine .slot-label { color: var(--red); font-weight: 700; }
+
+    /* Small screens: the whole drawer scrolls as one page, so the topic list
+       is not squeezed into the space left under the timer and set boxes. */
+    @media (max-width: 600px), (max-height: 760px) {
+      .settings-drawer { display: block; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+      .settings-header { position: sticky; top: 0; z-index: 2; }
+      .settings-body { overflow: visible; padding-bottom: 12px; }
+      .settings-footer { position: sticky; bottom: 0; z-index: 2; }
     }
-    .spin-btn .spin-icon { display: inline-block; font-size: 1.4em; transition: transform 0.6s; }
-    .spin-btn:hover { background: #ff4f5c; transform: translateY(-2px); }
-    .spin-btn:hover .spin-icon { transform: rotate(180deg); }
-    .spin-btn:active { transform: translateY(1px); }
-    .spin-btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
-    .spin-btn::after {
-      content: '';
-      position: absolute; top: 0; left: -100%; bottom: 0; width: 60%;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
-      transform: skewX(-20deg); transition: left 0.5s;
-    }
-    .spin-btn:hover::after { left: 160%; }
 
     /* Questions Card */
     .questions-card { margin-top: 40px; display: none; opacity: 0; transform: translateY(24px); transition: opacity 0.4s ease, transform 0.4s ease; }
@@ -490,6 +536,22 @@
       <button class="s-close-btn" onclick="closeSettings()">✕</button>
     </div>
   </div>
+  <div class="set-panel">
+    <div class="set-label">Question Set</div>
+    <div class="set-row">
+      <select class="set-select" id="setSelect" onchange="switchSet(this.value)" title="Choose a question set"></select>
+    </div>
+    <input class="set-name" id="setName" placeholder="Set name" title="Rename this set">
+    <div class="set-actions">
+      <button class="set-btn" onclick="newSet()">+ New</button>
+      <button class="set-btn" onclick="duplicateSet()">Duplicate</button>
+      <button class="set-btn" onclick="exportSet()">Export</button>
+      <button class="set-btn" onclick="exportAllSets()">Export All</button>
+      <button class="set-btn" onclick="document.getElementById('importFile').click()">Import</button>
+      <button class="set-btn danger" onclick="deleteSet()">Delete Set</button>
+    </div>
+    <input type="file" id="importFile" accept=".json,application/json" style="display:none" onchange="importSets(this)">
+  </div>
   <div class="settings-body" id="settingsBody"></div>
   <div class="settings-footer">
     <button class="s-add-topic-btn" onclick="addTopic()">+ Add New Topic</button>
@@ -508,22 +570,17 @@
   </header>
 
   <div class="slot-outer">
-    <div class="slot-machine">
+    <div class="slot-machine" id="slotMachine" role="button" tabindex="0" onclick="spin()" title="Click here to spin">
       <div class="c c-tl"></div><div class="c c-tr"></div>
       <div class="c c-bl"></div><div class="c c-br"></div>
-      <div class="slot-label">Selected Topic</div>
-      <div class="slot-display idle" id="slotDisplay">Spin to pick a topic</div>
+      <div class="slot-label">Click here to spin</div>
+      <div class="slot-display idle" id="slotDisplay"><span class="slot-text">Spin to pick a topic</span></div>
     </div>
     <div class="topic-meta">
       <div class="topic-count" id="topicCount"></div>
       <div class="topic-prev" id="topicPrev"></div>
     </div>
   </div>
-
-  <button class="spin-btn" id="spinBtn" onclick="spin()">
-    <span class="spin-icon">⟳</span>
-    <span id="spinLabel">SPIN</span>
-  </button>
 
   <div class="questions-card" id="questionsCard">
     <div class="card-inner">
@@ -572,7 +629,12 @@ const DEFAULTS = [
 /* ═══════════════════════════════════════════
    STATE
 ═══════════════════════════════════════════ */
-let topicsData = [];
+const SETS_KEY = 'qa_practice_sets';
+const OLD_TOPICS_KEY = 'qa_practice_topics';
+
+let sets = [];          // [{ id, name, topics }]
+let activeSetId = null;
+let topicsData = [];    // the active set's topics (same array as in `sets`)
 let spinning = false;
 let spinInterval = null;
 let lastTopic = null;
@@ -580,20 +642,207 @@ let activePill = null;
 let expandedTopics = new Set();
 
 function deepClone(arr) { return JSON.parse(JSON.stringify(arr)); }
+function newId() { return 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
 
 function loadTopics() {
   try {
-    const saved = localStorage.getItem('qa_practice_topics');
-    if (saved) topicsData = JSON.parse(saved);
-    else topicsData = deepClone(DEFAULTS);
-  } catch(e) {
-    topicsData = deepClone(DEFAULTS);
+    const saved = JSON.parse(localStorage.getItem(SETS_KEY) || 'null');
+    if (saved && Array.isArray(saved.sets) && saved.sets.length) {
+      sets = saved.sets;
+      activeSetId = saved.active;
+    }
+  } catch(e) {}
+
+  if (!sets.length) {
+    // First run, or upgrading from the single-set version: keep any edited topics.
+    let topics = null;
+    try {
+      const old = JSON.parse(localStorage.getItem(OLD_TOPICS_KEY) || 'null');
+      if (Array.isArray(old)) topics = old;
+    } catch(e) {}
+    sets = [{ id: newId(), name: topics ? 'My Questions' : 'Default', topics: topics || deepClone(DEFAULTS) }];
+    activeSetId = sets[0].id;
   }
+
+  if (!sets.some(s => s.id === activeSetId)) activeSetId = sets[0].id;
+  topicsData = activeSet().topics;
+  saveTopics();
 }
 
 function saveTopics() {
-  try { localStorage.setItem('qa_practice_topics', JSON.stringify(topicsData)); } catch(e) {}
+  try { localStorage.setItem(SETS_KEY, JSON.stringify({ active: activeSetId, sets })); } catch(e) {}
 }
+
+function activeSet() { return sets.find(s => s.id === activeSetId); }
+
+/* ═══════════════════════════════════════════
+   QUESTION SETS
+═══════════════════════════════════════════ */
+function uniqueSetName(name) {
+  const base = (name || '').trim() || 'Untitled Set';
+  let n = base, i = 2;
+  while (sets.some(s => s.name === n)) n = `${base} (${i++})`;
+  return n;
+}
+
+function renderSetPanel() {
+  const sel = document.getElementById('setSelect');
+  sel.innerHTML = '';
+  sets.forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s.id;
+    opt.textContent = `${s.name || 'Untitled Set'} (${s.topics.length})`;
+    if (s.id === activeSetId) opt.selected = true;
+    sel.appendChild(opt);
+  });
+  const nameInput = document.getElementById('setName');
+  if (document.activeElement !== nameInput) nameInput.value = activeSet().name;
+}
+
+function activateSet(id) {
+  activeSetId = id;
+  topicsData = activeSet().topics;
+  expandedTopics.clear();
+  saveTopics();
+  clearDisplay();
+  refreshMainUI();
+  renderSetPanel();
+  renderSettings();
+}
+
+function switchSet(id) {
+  if (spinning) { renderSetPanel(); return; }
+  activateSet(id);
+  showToast(`Using "${activeSet().name}"`);
+}
+
+function newSet() {
+  if (spinning) return;
+  const s = { id: newId(), name: uniqueSetName('New Set'), topics: [{ name: 'New Topic', questions: [''] }] };
+  sets.push(s);
+  activateSet(s.id);
+  const nameInput = document.getElementById('setName');
+  nameInput.focus();
+  nameInput.select();
+  showToast('New set added');
+}
+
+function duplicateSet() {
+  if (spinning) return;
+  const cur = activeSet();
+  const s = { id: newId(), name: uniqueSetName(cur.name + ' copy'), topics: deepClone(cur.topics) };
+  sets.push(s);
+  activateSet(s.id);
+  showToast(`Copied to "${s.name}"`);
+}
+
+function deleteSet() {
+  if (spinning) return;
+  if (sets.length <= 1) {
+    showToast('You need at least 1 question set');
+    return;
+  }
+  const cur = activeSet();
+  if (!confirm(`Delete the question set "${cur.name}"? Export it first if you might want it back.`)) return;
+  sets = sets.filter(s => s.id !== cur.id);
+  activateSet(sets[0].id);
+  showToast(`"${cur.name}" deleted`);
+}
+
+function downloadJson(data, filename) {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+function fileSafe(name) {
+  return (name || 'question-set').replace(/[\\/:*?"<>|]+/g, '').replace(/\s+/g, '-').slice(0, 60) || 'question-set';
+}
+
+function exportSet() {
+  const cur = activeSet();
+  downloadJson({ app: 'qa-practice', version: 1, sets: [{ name: cur.name, topics: cur.topics }] },
+               `${fileSafe(cur.name)}.json`);
+  showToast(`Exported "${cur.name}"`);
+}
+
+function exportAllSets() {
+  downloadJson({ app: 'qa-practice', version: 1, sets: sets.map(s => ({ name: s.name, topics: s.topics })) },
+               'qa-practice-all-sets.json');
+  showToast(`Exported ${sets.length} set${sets.length !== 1 ? 's' : ''}`);
+}
+
+// Keep only well-formed topics: { name: string, questions: [string, ...] }.
+function cleanTopics(topics) {
+  if (!Array.isArray(topics)) return [];
+  return topics
+    .filter(t => t && typeof t.name === 'string' && Array.isArray(t.questions))
+    .map(t => ({ name: t.name, questions: t.questions.filter(q => typeof q === 'string') }))
+    .map(t => (t.questions.length ? t : { name: t.name, questions: [''] }));
+}
+
+function importSets(input) {
+  const file = input.files && input.files[0];
+  input.value = '';
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    let data;
+    try { data = JSON.parse(reader.result); }
+    catch(e) { showToast('That file is not a question set'); return; }
+
+    // Accept our export format, a single { name, topics } set, or a bare topics array.
+    let incoming = [];
+    if (data && Array.isArray(data.sets)) incoming = data.sets;
+    else if (data && Array.isArray(data.topics)) incoming = [data];
+    else if (Array.isArray(data)) incoming = [{ name: file.name.replace(/\.json$/i, ''), topics: data }];
+
+    const added = [];
+    incoming.forEach(s => {
+      const topics = cleanTopics(s && s.topics);
+      if (!topics.length) return;
+      const name = uniqueSetName(typeof s.name === 'string' ? s.name : file.name.replace(/\.json$/i, ''));
+      const ns = { id: newId(), name, topics };
+      sets.push(ns);
+      added.push(ns);
+    });
+
+    if (!added.length) { showToast('No questions found in that file'); return; }
+    if (spinning) { saveTopics(); renderSetPanel(); }
+    else activateSet(added[0].id);
+    showToast(added.length === 1 ? `Imported "${added[0].name}"` : `Imported ${added.length} sets`);
+  };
+  reader.readAsText(file);
+}
+
+document.getElementById('setName').addEventListener('input', e => {
+  activeSet().name = e.target.value;
+  saveTopics();
+  const opt = document.querySelector(`#setSelect option[value="${activeSetId}"]`);
+  if (opt) opt.textContent = `${e.target.value || 'Untitled Set'} (${topicsData.length})`;
+  updateTopicCount();
+});
+
+document.getElementById('setName').addEventListener('change', e => {
+  // On leaving the field, keep names non-empty and unique.
+  const cur = activeSet();
+  const others = sets.filter(s => s.id !== cur.id);
+  let base = e.target.value.trim() || 'Untitled Set', n = base, i = 2;
+  while (others.some(s => s.name === n)) n = `${base} (${i++})`;
+  cur.name = n;
+  saveTopics();
+  renderSetPanel();
+  updateTopicCount();
+});
+
+document.getElementById('slotMachine').addEventListener('keydown', e => {
+  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); spin(); }
+});
 
 /* ═══════════════════════════════════════════
    SETTINGS PANEL
@@ -602,6 +851,7 @@ function openSettings() {
   document.getElementById('settingsDrawer').classList.add('open');
   document.getElementById('settingsOverlay').classList.add('open');
   document.getElementById('settingsBtn').classList.add('open');
+  renderSetPanel();
   renderSettings();
 }
 
@@ -739,14 +989,18 @@ function deleteQuestion(ti, qi) {
 }
 
 function confirmReset() {
-  if (confirm('Reset all topics to the original defaults? This will remove any custom topics and edits.')) {
-    topicsData = deepClone(DEFAULTS);
-    expandedTopics.clear();
-    saveTopics();
-    refreshMainUI();
-    renderSettings();
-    clearDisplay();
-    showToast('Reset to defaults');
+  // Restores the set named "Default" (re-creating it if it was renamed or deleted)
+  // and switches to it. Other sets are never touched.
+  if (spinning) return;
+  if (confirm(`Restore the "Default" set to the original ${DEFAULTS.length} topics? Any edits to "Default" are lost. Your other sets are not changed.`)) {
+    let def = sets.find(s => s.name === 'Default');
+    if (def) def.topics = deepClone(DEFAULTS);
+    else {
+      def = { id: newId(), name: 'Default', topics: deepClone(DEFAULTS) };
+      sets.unshift(def);
+    }
+    activateSet(def.id);
+    showToast('"Default" restored');
   }
 }
 
@@ -765,11 +1019,13 @@ function escHtml(str) {
 function refreshMainUI() {
   updateTopicCount();
   renderPills();
+  renderSetPanel();
 }
 
 function updateTopicCount() {
   const n = topicsData.length;
-  document.getElementById('topicCount').textContent = `${n} topic${n !== 1 ? 's' : ''} available`;
+  const setName = sets.length > 1 ? `${activeSet().name || 'Untitled Set'} · ` : '';
+  document.getElementById('topicCount').textContent = `${setName}${n} topic${n !== 1 ? 's' : ''} available`;
 }
 
 function renderPills() {
@@ -798,10 +1054,9 @@ function setActivePill(el) {
 function clearDisplay() {
   const display = document.getElementById('slotDisplay');
   display.className = 'slot-display idle';
-  display.textContent = 'Spin to pick a topic';
+  setSlotText('Spin to pick a topic');
   document.getElementById('questionsCard').classList.remove('visible');
   document.getElementById('questionsCard').style.display = 'none';
-  document.getElementById('spinLabel').textContent = 'SPIN';
   document.getElementById('topicPrev').innerHTML = '';
   lastTopic = null;
 }
@@ -811,12 +1066,12 @@ function spin() {
   spinning = true;
   setActivePill(null);
 
-  const btn = document.getElementById('spinBtn');
+  const box = document.getElementById('slotMachine');
   const display = document.getElementById('slotDisplay');
   const card = document.getElementById('questionsCard');
   const prev = document.getElementById('topicPrev');
 
-  btn.disabled = true;
+  box.classList.add('busy');
   card.classList.remove('visible');
 
   const pool = lastTopic
@@ -833,16 +1088,15 @@ function spin() {
 
   function cycle() {
     const rand = topicsData[Math.floor(Math.random() * topicsData.length)];
-    display.textContent = rand.name;
+    setSlotText(rand.name);
     count++;
 
     if (count >= totalSpins) {
       clearInterval(spinInterval);
-      display.textContent = chosen.name;
       display.className = 'slot-display stopped';
+      setSlotText(chosen.name);
       spinning = false;
-      btn.disabled = false;
-      document.getElementById('spinLabel').textContent = 'SPIN AGAIN';
+      box.classList.remove('busy');
 
       if (lastTopic) prev.innerHTML = `Last: <span>${escHtml(lastTopic.name)}</span>`;
       lastTopic = chosen;
@@ -865,14 +1119,50 @@ function spin() {
   spinInterval = setInterval(cycle, delay);
 }
 
+// Keep the topic on one line by shrinking it (down to 60% of the normal size);
+// a topic still too long after that wraps onto two lines at that small size. The box height
+// is fixed in CSS, so it never jumps while spinning.
+function setSlotText(text) {
+  const span = document.querySelector('#slotDisplay .slot-text');
+  span.textContent = text;
+  fitSlotText();
+}
+
+function fitSlotText() {
+  const box = document.getElementById('slotDisplay');
+  const span = box.querySelector('.slot-text');
+  span.style.fontSize = '';
+  span.style.whiteSpace = '';
+  const maxW = box.clientWidth, maxH = box.clientHeight;
+  if (!maxW || !maxH) return;
+  const base = parseFloat(getComputedStyle(span).fontSize);
+  let size = base;
+  const minOneLine = Math.max(16, base * 0.6);
+  while (span.scrollWidth > maxW && size > minOneLine) {
+    size -= 1;
+    span.style.fontSize = size + 'px';
+  }
+  if (span.scrollWidth <= maxW) return;
+  // Wrapped text starts no bigger than the smallest one-line size, so a longer
+  // topic never shows larger than a shorter one.
+  span.style.whiteSpace = 'normal';
+  span.style.fontSize = size + 'px';
+  while ((span.offsetHeight > maxH || span.scrollWidth > maxW) && size > 12) {
+    size -= 1;
+    span.style.fontSize = size + 'px';
+  }
+}
+
+window.addEventListener('resize', fitSlotText);
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitSlotText);
+
 function selectTopic(topic) {
   const display = document.getElementById('slotDisplay');
   const prev = document.getElementById('topicPrev');
   if (lastTopic) prev.innerHTML = `Last: <span>${escHtml(lastTopic.name)}</span>`;
   lastTopic = topic;
   display.className = 'slot-display stopped';
-  display.textContent = topic.name;
-  document.getElementById('spinLabel').textContent = 'SPIN';
+  setSlotText(topic.name);
   showQuestions(topic);
 }
 

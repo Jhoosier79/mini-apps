@@ -1,0 +1,1223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Speak for a minute</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:      #000000;
+      --surface: #0a0a0a;
+      --card:    #111111;
+      --panel:   #0f0f0f;
+      --red:     #e63946;
+      --gold:    #f4c542;
+      --white:   #f0f0f8;
+      --muted:   #b4b4cc;
+      --border:  rgba(230,57,70,0.35);
+      --line:    rgba(255,255,255,0.06);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--white);
+      font-family: 'Noto Sans JP', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image:
+        linear-gradient(rgba(230,57,70,0.12) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(230,57,70,0.12) 1px, transparent 1px);
+      background-size: 64px 64px;
+      pointer-events: none; z-index: 0;
+    }
+
+    /* ── Settings Button (fixed) ── */
+    .settings-btn {
+      position: fixed;
+      top: 20px; right: 20px;
+      z-index: 200;
+      width: 44px; height: 44px;
+      background: var(--surface);
+      border: 1.5px solid rgba(255,255,255,0.22);
+      border-radius: 50%;
+      color: var(--muted);
+      font-size: 1.2rem;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: color 0.2s, border-color 0.2s, transform 0.3s, background 0.2s;
+    }
+    .settings-btn:hover {
+      color: var(--white);
+      border-color: var(--border);
+      background: var(--card);
+      transform: rotate(45deg);
+    }
+    .settings-btn.open {
+      color: var(--red);
+      border-color: var(--red);
+      transform: rotate(90deg);
+    }
+
+    /* ── Overlay ── */
+    .settings-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.55);
+      backdrop-filter: blur(3px);
+      z-index: 300;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+    }
+    .settings-overlay.open {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    /* ── Settings Drawer ── */
+    .settings-drawer {
+      position: fixed;
+      top: 0; right: 0; bottom: 0;
+      width: min(440px, 100vw);
+      background: var(--panel);
+      border-left: 1.5px solid rgba(230,57,70,0.2);
+      box-shadow: -24px 0 80px rgba(0,0,0,0.8);
+      z-index: 400;
+      display: flex; flex-direction: column;
+      transform: translateX(100%);
+      transition: transform 0.38s cubic-bezier(0.4,0,0.2,1);
+    }
+    .settings-drawer.open {
+      transform: translateX(0);
+    }
+
+    .settings-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 20px 18px;
+      border-bottom: 1px solid var(--line);
+      flex-shrink: 0;
+      background: var(--bg);
+    }
+    .settings-title {
+      font-family: 'Dela Gothic One', sans-serif;
+      font-size: 1rem;
+      letter-spacing: 0.08em;
+      color: var(--white);
+    }
+    .settings-header-actions {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .s-reset-btn {
+      font-size: 0.68rem;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 6px;
+      padding: 6px 12px;
+      cursor: pointer;
+      font-family: 'Noto Sans JP', sans-serif;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .s-reset-btn:hover { color: var(--white); border-color: rgba(255,255,255,0.25); }
+
+    .s-close-btn {
+      width: 32px; height: 32px;
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 6px;
+      color: var(--muted);
+      font-size: 1rem;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: color 0.2s, border-color 0.2s, background 0.2s;
+    }
+    .s-close-btn:hover { color: var(--white); border-color: rgba(255,255,255,0.25); background: rgba(255,255,255,0.05); }
+
+    .settings-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 0 8px;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255,255,255,0.1) transparent;
+    }
+    .settings-body::-webkit-scrollbar { width: 4px; }
+    .settings-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+
+    .settings-footer {
+      padding: 14px 16px;
+      border-top: 1px solid var(--line);
+      flex-shrink: 0;
+      background: var(--bg);
+    }
+    .s-add-topic-btn {
+      width: 100%;
+      padding: 13px;
+      background: transparent;
+      border: 1.5px dashed rgba(230,57,70,0.35);
+      border-radius: 8px;
+      color: var(--red);
+      font-family: 'Dela Gothic One', sans-serif;
+      font-size: 0.85rem;
+      letter-spacing: 0.08em;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .s-add-topic-btn:hover {
+      background: rgba(230,57,70,0.07);
+      border-color: var(--red);
+    }
+
+    /* ── Topic Row in Settings ── */
+    .st-topic {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 16px 8px 14px;
+      border-bottom: 1px solid var(--line);
+      transition: background 0.15s;
+    }
+    .st-topic:hover { background: rgba(255,255,255,0.03); }
+
+    .st-t-num {
+      font-family: 'Dela Gothic One', sans-serif;
+      font-size: 0.8rem;
+      color: var(--red);
+      opacity: 0.6;
+      flex-shrink: 0;
+      width: 22px;
+      text-align: right;
+    }
+
+    .st-topic-name {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: var(--white);
+      font-family: 'Noto Sans JP', sans-serif;
+      font-size: 0.88rem;
+      font-weight: 500;
+      padding: 6px 8px;
+      border-radius: 4px;
+      outline: none;
+      transition: background 0.2s;
+      cursor: text;
+      min-width: 0;
+    }
+    .st-topic-name:hover { background: rgba(255,255,255,0.06); }
+    .st-topic-name:focus { background: rgba(255,255,255,0.08); }
+
+    .st-delete-topic {
+      width: 28px; height: 28px;
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      font-size: 1rem;
+      cursor: pointer;
+      border-radius: 4px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      transition: color 0.2s, background 0.2s;
+      line-height: 1;
+    }
+    .st-delete-topic:hover { color: var(--red); background: rgba(230,57,70,0.1); }
+
+    /* Empty state in settings */
+    .st-empty {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--muted);
+      font-size: 0.82rem;
+      line-height: 1.7;
+    }
+
+    /* ── Set Panel ── */
+    .set-panel {
+      padding: 14px 16px 16px;
+      border-bottom: 1px solid var(--line);
+      flex-shrink: 0;
+      background: var(--surface);
+    }
+    .set-label {
+      font-size: 0.65rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .set-row { display: flex; gap: 8px; align-items: center; }
+    .set-select, .set-name {
+      flex: 1;
+      min-width: 0;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 6px;
+      color: var(--white);
+      font-family: 'Noto Sans JP', sans-serif;
+      font-size: 0.85rem;
+      padding: 7px 10px;
+      outline: none;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .set-select option { background: var(--panel); color: var(--white); }
+    .set-select:focus, .set-name:focus { border-color: rgba(230,57,70,0.4); background: rgba(255,255,255,0.06); }
+    .set-name { margin-top: 8px; width: 100%; }
+    .set-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+    .set-btn {
+      font-size: 0.7rem;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 6px;
+      padding: 6px 10px;
+      cursor: pointer;
+      font-family: 'Noto Sans JP', sans-serif;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .set-btn:hover { color: var(--white); border-color: rgba(255,255,255,0.3); }
+    .set-btn.danger:hover { color: var(--red); border-color: var(--red); }
+
+    /* ── Main Page ── */
+    .container {
+      position: relative; z-index: 1;
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 48px 24px 100px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 64px;
+    }
+    .eyebrow {
+      font-size: 0.68rem;
+      letter-spacing: 0.35em;
+      text-transform: uppercase;
+      color: var(--red);
+      margin-bottom: 16px;
+    }
+    .title {
+      font-family: 'Dela Gothic One', sans-serif;
+      font-size: clamp(2rem, 7vw, 3.8rem);
+      line-height: 1; letter-spacing: -0.02em;
+      color: var(--gold);
+      margin-bottom: 12px;
+    }
+    .subtitle {
+      font-family: 'Dela Gothic One', sans-serif;
+      font-size: clamp(0.9rem, 2.5vw, 1.2rem);
+      letter-spacing: 0.2em; color: var(--muted); text-transform: uppercase;
+    }
+    .hr { width: 48px; height: 3px; background: var(--red); margin: 24px auto 0; border-radius: 2px; }
+
+    /* Slot */
+    .slot-outer { margin-bottom: 8px; }
+    .slot-machine {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 16px;
+      padding: 40px 28px 36px;
+      text-align: center;
+      position: relative; overflow: hidden;
+    }
+    .slot-machine::before {
+      content: '';
+      position: absolute; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--red), transparent);
+      opacity: 0.5; animation: sweep 4s linear infinite; pointer-events: none;
+    }
+    @keyframes sweep {
+      0%   { top: 0;    opacity: 0; }
+      5%   { opacity: 0.6; }
+      95%  { opacity: 0.6; }
+      100% { top: 100%; opacity: 0; }
+    }
+    .c { position: absolute; width: 18px; height: 18px; border-color: var(--red); border-style: solid; opacity: 0.6; }
+    .c-tl { top: 10px; left: 10px;  border-width: 2px 0 0 2px; }
+    .c-tr { top: 10px; right: 10px; border-width: 2px 2px 0 0; }
+    .c-bl { bottom: 10px; left: 10px;  border-width: 0 0 2px 2px; }
+    .c-br { bottom: 10px; right: 10px; border-width: 0 2px 2px 0; }
+
+    .slot-label { font-size: 0.65rem; letter-spacing: 0.35em; text-transform: uppercase; color: var(--muted); margin-bottom: 20px; }
+    .slot-display {
+      font-family: 'Dela Gothic One', sans-serif;
+      font-size: clamp(1.6rem, 5.5vw, 2.8rem);
+      color: var(--white);
+      /* Fixed height (room for 2 lines) so the box never changes size;
+         fitSlotText() shrinks the text to fit. */
+      height: clamp(76px, 19vw, 104px); line-height: 1.15; overflow: hidden;
+      display: flex; align-items: center; justify-content: center;
+      letter-spacing: -0.01em; transition: color 0.15s;
+    }
+    .slot-text { display: block; max-width: 100%; white-space: nowrap; overflow-wrap: anywhere; }
+    .slot-display.idle    { color: var(--muted); font-size: clamp(1rem, 3vw, 1.4rem); letter-spacing: 0.05em; }
+    .slot-display.spinning { color: var(--gold); }
+    .slot-display.stopped  { color: var(--white); animation: pop 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards; }
+    @keyframes pop { 0% { transform: scale(0.75); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+
+    .topic-meta { display: flex; align-items: center; justify-content: space-between; padding: 10px 2px 0; }
+    .topic-count { font-size: 0.7rem; letter-spacing: 0.1em; color: var(--muted); }
+    .topic-prev  { font-size: 0.7rem; letter-spacing: 0.1em; color: var(--muted); text-align: right; }
+    .topic-prev span { color: var(--red); font-weight: 700; }
+
+    /* Spinner box is the spin control */
+    .slot-machine { cursor: pointer; user-select: none; -webkit-tap-highlight-color: transparent; transition: border-color 0.2s, background 0.2s, transform 0.15s; }
+    .slot-machine:hover { border-color: var(--red); background: #0e0e0e; }
+    .slot-machine:active { transform: scale(0.99); }
+    .slot-machine:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+    .slot-machine.busy { cursor: wait; }
+    .slot-machine.busy:hover { border-color: var(--border); background: var(--surface); }
+    .slot-machine .slot-label { color: var(--red); font-weight: 700; }
+
+    /* ── Timer Setting (settings drawer) ── */
+    .timer-row { display: flex; align-items: center; gap: 8px; }
+    .timer-input {
+      width: 64px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 6px;
+      color: var(--white);
+      font-family: 'Noto Sans JP', sans-serif;
+      font-size: 0.85rem;
+      padding: 7px 8px;
+      text-align: center;
+      outline: none;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .timer-input:focus { border-color: rgba(230,57,70,0.4); background: rgba(255,255,255,0.06); }
+    .timer-unit { font-size: 0.75rem; color: var(--muted); }
+
+    /* Small screens: the whole drawer scrolls as one page, so the topic list
+       is not squeezed into the space left under the timer and set boxes. */
+    @media (max-width: 600px), (max-height: 760px) {
+      .settings-drawer { display: block; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+      .settings-header { position: sticky; top: 0; z-index: 2; }
+      .settings-body { overflow: visible; padding-bottom: 12px; }
+      .settings-footer { position: sticky; bottom: 0; z-index: 2; }
+    }
+
+    /* Timer Card */
+    .timer-card { margin-top: 40px; display: none; opacity: 0; transform: translateY(24px); transition: opacity 0.4s ease, transform 0.4s ease; }
+    .timer-card.visible { display: block; opacity: 1; transform: translateY(0); }
+    .card-inner { background: var(--card); border-radius: 16px; border: 1.5px solid var(--line); overflow: hidden; }
+    .card-header { background: linear-gradient(135deg, var(--red) 0%, #c1121f 100%); padding: 20px 28px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    .card-header-topic { font-family: 'Dela Gothic One', sans-serif; font-size: 1.35rem; color: #fff; letter-spacing: 0.03em; }
+
+    .timer-body { padding: 32px 28px 28px; text-align: center; }
+    .timer-display {
+      font-family: 'Dela Gothic One', sans-serif;
+      font-size: clamp(3.5rem, 16vw, 7rem);
+      line-height: 1;
+      color: var(--white);
+      font-variant-numeric: tabular-nums;
+      transition: color 0.2s;
+    }
+    .timer-card.running .timer-display { color: var(--gold); }
+    .timer-card.done .timer-display { color: var(--red); animation: flash 0.6s ease-in-out 3; }
+    @keyframes flash { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+
+    .timer-status { margin-top: 12px; font-size: 0.75rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--muted); min-height: 1.2em; }
+    .timer-card.done .timer-status { color: var(--red); font-weight: 700; }
+
+    .timer-bar { margin: 22px auto 0; height: 6px; max-width: 520px; background: rgba(255,255,255,0.08); border-radius: 3px; overflow: hidden; }
+    .timer-bar-fill { height: 100%; width: 100%; background: var(--red); border-radius: 3px; transition: width 0.12s linear; }
+    .timer-card.running .timer-bar-fill { background: var(--gold); }
+
+    .timer-buttons { display: flex; gap: 10px; justify-content: center; margin-top: 26px; flex-wrap: wrap; }
+    .timer-btn {
+      font-family: 'Dela Gothic One', sans-serif;
+      font-size: clamp(1rem, 2.6vw, 1.25rem);
+      letter-spacing: 0.08em;
+      border-radius: 10px;
+      padding: 16px 34px;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s, border-color 0.2s, transform 0.15s;
+    }
+    .timer-btn:active { transform: translateY(1px); }
+    .timer-btn.primary { background: var(--red); color: #fff; border: none; min-width: 180px; }
+    .timer-btn.primary:hover { background: #ff4f5c; }
+    .timer-btn.ghost { background: transparent; color: var(--muted); border: 1.5px solid rgba(255,255,255,0.18); }
+    .timer-btn.ghost:hover { color: var(--white); border-color: rgba(255,255,255,0.35); }
+
+    /* Topic pills */
+    .topics-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 48px; justify-content: center; }
+    .topic-pill { font-size: 0.72rem; letter-spacing: 0.04em; color: var(--muted); background: var(--surface); border: 1px solid rgba(255,255,255,0.07); border-radius: 100px; padding: 5px 14px; cursor: pointer; transition: color 0.2s, border-color 0.2s, background 0.2s; user-select: none; font-family: 'Noto Sans JP', sans-serif; }
+    .topic-pill:hover { color: var(--white); border-color: var(--border); background: var(--card); }
+    .topic-pill.active { color: #fff; background: var(--red); border-color: var(--red); }
+    .topics-label { width: 100%; text-align: center; font-size: 0.65rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+
+    /* Toast */
+    .toast {
+      position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(20px);
+      background: var(--card); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px;
+      padding: 10px 20px; font-size: 0.8rem; color: var(--white); z-index: 500;
+      opacity: 0; transition: opacity 0.3s, transform 0.3s; pointer-events: none;
+      white-space: nowrap;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+
+<button class="settings-btn" id="settingsBtn" onclick="openSettings()" title="Settings">⚙</button>
+
+<div class="settings-overlay" id="settingsOverlay" onclick="closeSettings()"></div>
+
+<div class="settings-drawer" id="settingsDrawer">
+  <div class="settings-header">
+    <div class="settings-title">⚙ &nbsp;Settings</div>
+    <div class="settings-header-actions">
+      <button class="s-reset-btn" onclick="confirmReset()">Reset Defaults</button>
+      <button class="s-close-btn" onclick="closeSettings()">✕</button>
+    </div>
+  </div>
+  <div class="set-panel">
+    <div class="set-label">Timer</div>
+    <div class="timer-row">
+      <input class="timer-input" id="timerMin" type="number" min="0" max="30" step="1" title="Minutes">
+      <span class="timer-unit">min</span>
+      <input class="timer-input" id="timerSec" type="number" min="0" max="59" step="5" title="Seconds">
+      <span class="timer-unit">sec</span>
+    </div>
+  </div>
+  <div class="set-panel">
+    <div class="set-label">Topic Set</div>
+    <div class="set-row">
+      <select class="set-select" id="setSelect" onchange="switchSet(this.value)" title="Choose a topic set"></select>
+    </div>
+    <input class="set-name" id="setName" placeholder="Set name" title="Rename this set">
+    <div class="set-actions">
+      <button class="set-btn" onclick="newSet()">+ New</button>
+      <button class="set-btn" onclick="duplicateSet()">Duplicate</button>
+      <button class="set-btn" onclick="exportSet()">Export</button>
+      <button class="set-btn" onclick="exportAllSets()">Export All</button>
+      <button class="set-btn" onclick="document.getElementById('importFile').click()">Import</button>
+      <button class="set-btn danger" onclick="deleteSet()">Delete Set</button>
+    </div>
+    <input type="file" id="importFile" accept=".json,application/json" style="display:none" onchange="importSets(this)">
+  </div>
+  <div class="settings-body" id="settingsBody"></div>
+  <div class="settings-footer">
+    <button class="s-add-topic-btn" onclick="addTopic()">+ Add New Topic</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="container">
+
+  <header>
+    <div class="eyebrow">Classroom Activity</div>
+    <div class="title">Speak for a minute</div>
+    <div class="subtitle">Speaking Practice</div>
+    <div class="hr"></div>
+  </header>
+
+  <div class="slot-outer">
+    <div class="slot-machine" id="slotMachine" role="button" tabindex="0" onclick="spin()" title="Click here to spin">
+      <div class="c c-tl"></div><div class="c c-tr"></div>
+      <div class="c c-bl"></div><div class="c c-br"></div>
+      <div class="slot-label">Click here to spin</div>
+      <div class="slot-display idle" id="slotDisplay"><span class="slot-text">Spin to pick a topic</span></div>
+    </div>
+    <div class="topic-meta">
+      <div class="topic-count" id="topicCount"></div>
+      <div class="topic-prev" id="topicPrev"></div>
+    </div>
+  </div>
+
+  <div class="timer-card" id="timerCard">
+    <div class="card-inner">
+      <div class="card-header">
+        <div class="card-header-topic" id="cardTopic"></div>
+      </div>
+      <div class="timer-body">
+        <div class="timer-display" id="timerDisplay">1:00</div>
+        <div class="timer-status" id="timerStatus">Ready</div>
+        <div class="timer-bar"><div class="timer-bar-fill" id="timerBar"></div></div>
+        <div class="timer-buttons">
+          <button class="timer-btn primary" id="timerStartBtn" onclick="toggleTimer()">START</button>
+          <button class="timer-btn ghost" onclick="resetTimer()">RESET</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="topics-row">
+    <div class="topics-label">Or choose a topic directly</div>
+  </div>
+  <div class="topics-row" id="pillsRow"></div>
+
+</div>
+
+<script>
+/* ═══════════════════════════════════════════
+   DEFAULT DATA
+═══════════════════════════════════════════ */
+const DEFAULTS = [
+  "fashion",
+  "climate change (気候変動)",
+  "anime",
+  "smartphones",
+  "robots",
+  "cooking",
+  "cockroaches (ゴキブリ)",
+  "tourism in Japan (日本の観光)",
+  "manga",
+  "weather",
+  "travel",
+  "K-pop",
+  "Osaka",
+  "artificial intelligence (AI)",
+  "video games",
+  "shopping",
+  "music",
+  "exercise",
+  "social media (SNS)",
+  "childhood"
+].map(name => ({ name }));
+
+const DEFAULT_SECONDS = 60;
+
+/* ═══════════════════════════════════════════
+   STATE
+═══════════════════════════════════════════ */
+const SETS_KEY = 'speak_minute_sets';
+const TIMER_KEY = 'speak_minute_timer_seconds';
+
+let sets = [];          // [{ id, name, topics: [{ name }] }]
+let activeSetId = null;
+let topicsData = [];    // the active set's topics (same array as in `sets`)
+let spinning = false;
+let spinInterval = null;
+let lastTopic = null;
+let activePill = null;
+
+let timerSeconds = DEFAULT_SECONDS;
+let timer = { remainingMs: DEFAULT_SECONDS * 1000, running: false, endAt: 0, tick: null, done: false };
+
+function deepClone(arr) { return JSON.parse(JSON.stringify(arr)); }
+function newId() { return 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+
+function loadTopics() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(SETS_KEY) || 'null');
+    if (saved && Array.isArray(saved.sets) && saved.sets.length) {
+      sets = saved.sets;
+      activeSetId = saved.active;
+    }
+  } catch(e) {}
+
+  if (!sets.length) {
+    sets = [{ id: newId(), name: 'Default', topics: deepClone(DEFAULTS) }];
+    activeSetId = sets[0].id;
+  }
+
+  if (!sets.some(s => s.id === activeSetId)) activeSetId = sets[0].id;
+  topicsData = activeSet().topics;
+  saveTopics();
+}
+
+function saveTopics() {
+  try { localStorage.setItem(SETS_KEY, JSON.stringify({ active: activeSetId, sets })); } catch(e) {}
+}
+
+function activeSet() { return sets.find(s => s.id === activeSetId); }
+
+/* ═══════════════════════════════════════════
+   TIMER SETTING
+═══════════════════════════════════════════ */
+function loadTimerSetting() {
+  try {
+    const v = parseInt(localStorage.getItem(TIMER_KEY), 10);
+    if (v >= 1 && v <= 1800) timerSeconds = v;
+  } catch(e) {}
+}
+
+function renderTimerSetting() {
+  document.getElementById('timerMin').value = Math.floor(timerSeconds / 60);
+  document.getElementById('timerSec').value = timerSeconds % 60;
+}
+
+function applyTimerSetting() {
+  const m = parseInt(document.getElementById('timerMin').value, 10) || 0;
+  const s = parseInt(document.getElementById('timerSec').value, 10) || 0;
+  let total = Math.max(0, m) * 60 + Math.max(0, s);
+  if (total < 1) total = 1;
+  if (total > 1800) total = 1800;
+  timerSeconds = total;
+  try { localStorage.setItem(TIMER_KEY, String(total)); } catch(e) {}
+  renderTimerSetting();
+  if (!timer.running) resetTimer();
+  showToast(`Timer set to ${fmtTime(total)}`);
+}
+
+/* ═══════════════════════════════════════════
+   SETTINGS PANEL
+═══════════════════════════════════════════ */
+function openSettings() {
+  document.getElementById('settingsDrawer').classList.add('open');
+  document.getElementById('settingsOverlay').classList.add('open');
+  document.getElementById('settingsBtn').classList.add('open');
+  renderTimerSetting();
+  renderSetPanel();
+  renderSettings();
+}
+
+function closeSettings() {
+  document.getElementById('settingsDrawer').classList.remove('open');
+  document.getElementById('settingsOverlay').classList.remove('open');
+  document.getElementById('settingsBtn').classList.remove('open');
+}
+
+function renderSettings() {
+  const body = document.getElementById('settingsBody');
+  body.innerHTML = '';
+
+  if (topicsData.length === 0) {
+    body.innerHTML = `<div class="st-empty">No topics yet.<br>Add one below!</div>`;
+    return;
+  }
+
+  topicsData.forEach((topic, ti) => {
+    const row = document.createElement('div');
+    row.className = 'st-topic';
+    row.dataset.ti = ti;
+    row.innerHTML = `
+      <span class="st-t-num">${ti + 1}</span>
+      <input class="st-topic-name" value="${escHtml(topic.name)}" placeholder="Topic" data-ti="${ti}">
+      <button class="st-delete-topic" title="Delete topic" onclick="deleteTopic(${ti})">✕</button>
+    `;
+    row.querySelector('.st-topic-name').addEventListener('input', e => {
+      topicsData[ti].name = e.target.value;
+      saveTopics();
+      refreshMainUI();
+    });
+    body.appendChild(row);
+  });
+}
+
+function addTopic() {
+  topicsData.push({ name: 'New Topic' });
+  saveTopics();
+  refreshMainUI();
+  renderSettings();
+  const body = document.getElementById('settingsBody');
+  setTimeout(() => {
+    body.scrollTop = body.scrollHeight;
+    const inputs = body.querySelectorAll('.st-topic-name');
+    const last = inputs[inputs.length - 1];
+    if (last) { last.focus(); last.select(); }
+  }, 50);
+  showToast('New topic added');
+}
+
+function deleteTopic(ti) {
+  const name = topicsData[ti].name;
+  topicsData.splice(ti, 1);
+  saveTopics();
+  refreshMainUI();
+  renderSettings();
+  if (lastTopic && lastTopic.name === name) {
+    clearDisplay();
+  }
+  showToast(`"${name}" removed`);
+}
+
+function confirmReset() {
+  // Restores the set named "Default" (re-creating it if it was renamed or deleted)
+  // and switches to it. Other sets are never touched.
+  if (spinning) return;
+  if (confirm(`Restore the "Default" set to the original ${DEFAULTS.length} topics? Any edits to "Default" are lost. Your other sets are not changed.`)) {
+    let def = sets.find(s => s.name === 'Default');
+    if (def) def.topics = deepClone(DEFAULTS);
+    else {
+      def = { id: newId(), name: 'Default', topics: deepClone(DEFAULTS) };
+      sets.unshift(def);
+    }
+    activateSet(def.id);
+    showToast('"Default" restored');
+  }
+}
+
+function escHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ═══════════════════════════════════════════
+   TOPIC SETS
+═══════════════════════════════════════════ */
+function uniqueSetName(name) {
+  const base = (name || '').trim() || 'Untitled Set';
+  let n = base, i = 2;
+  while (sets.some(s => s.name === n)) n = `${base} (${i++})`;
+  return n;
+}
+
+function renderSetPanel() {
+  const sel = document.getElementById('setSelect');
+  sel.innerHTML = '';
+  sets.forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s.id;
+    opt.textContent = `${s.name || 'Untitled Set'} (${s.topics.length})`;
+    if (s.id === activeSetId) opt.selected = true;
+    sel.appendChild(opt);
+  });
+  const nameInput = document.getElementById('setName');
+  if (document.activeElement !== nameInput) nameInput.value = activeSet().name;
+}
+
+function activateSet(id) {
+  activeSetId = id;
+  topicsData = activeSet().topics;
+  saveTopics();
+  clearDisplay();
+  refreshMainUI();
+  renderSetPanel();
+  renderSettings();
+}
+
+function switchSet(id) {
+  if (spinning) { renderSetPanel(); return; }
+  activateSet(id);
+  showToast(`Using "${activeSet().name}"`);
+}
+
+function newSet() {
+  if (spinning) return;
+  const s = { id: newId(), name: uniqueSetName('New Set'), topics: [{ name: 'New Topic' }] };
+  sets.push(s);
+  activateSet(s.id);
+  const nameInput = document.getElementById('setName');
+  nameInput.focus();
+  nameInput.select();
+  showToast('New set added');
+}
+
+function duplicateSet() {
+  if (spinning) return;
+  const cur = activeSet();
+  const s = { id: newId(), name: uniqueSetName(cur.name + ' copy'), topics: deepClone(cur.topics) };
+  sets.push(s);
+  activateSet(s.id);
+  showToast(`Copied to "${s.name}"`);
+}
+
+function deleteSet() {
+  if (spinning) return;
+  if (sets.length <= 1) {
+    showToast('You need at least 1 topic set');
+    return;
+  }
+  const cur = activeSet();
+  if (!confirm(`Delete the topic set "${cur.name}"? Export it first if you might want it back.`)) return;
+  sets = sets.filter(s => s.id !== cur.id);
+  activateSet(sets[0].id);
+  showToast(`"${cur.name}" deleted`);
+}
+
+function downloadJson(data, filename) {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+function fileSafe(name) {
+  return (name || 'topic-set').replace(/[\\/:*?"<>|]+/g, '').replace(/\s+/g, '-').slice(0, 60) || 'topic-set';
+}
+
+function exportSet() {
+  const cur = activeSet();
+  downloadJson({ app: 'speak-for-a-minute', version: 1, sets: [{ name: cur.name, topics: cur.topics.map(t => t.name) }] },
+               `${fileSafe(cur.name)}.json`);
+  showToast(`Exported "${cur.name}"`);
+}
+
+function exportAllSets() {
+  downloadJson({ app: 'speak-for-a-minute', version: 1, sets: sets.map(s => ({ name: s.name, topics: s.topics.map(t => t.name) })) },
+               'speak-for-a-minute-all-sets.json');
+  showToast(`Exported ${sets.length} set${sets.length !== 1 ? 's' : ''}`);
+}
+
+// Topics may be plain strings, or objects with a name (a Q&A Practice export works too;
+// its questions are ignored).
+function cleanTopics(topics) {
+  if (!Array.isArray(topics)) return [];
+  return topics
+    .map(t => (typeof t === 'string' ? t : (t && typeof t.name === 'string' ? t.name : null)))
+    .filter(n => n !== null)
+    .map(name => ({ name }));
+}
+
+function importSets(input) {
+  const file = input.files && input.files[0];
+  input.value = '';
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    let data;
+    try { data = JSON.parse(reader.result); }
+    catch(e) { showToast('That file is not a topic set'); return; }
+
+    // Accept our export format, a single { name, topics } set, or a bare topics array.
+    let incoming = [];
+    if (data && Array.isArray(data.sets)) incoming = data.sets;
+    else if (data && Array.isArray(data.topics)) incoming = [data];
+    else if (Array.isArray(data)) incoming = [{ name: file.name.replace(/\.json$/i, ''), topics: data }];
+
+    const added = [];
+    incoming.forEach(s => {
+      const topics = cleanTopics(s && s.topics);
+      if (!topics.length) return;
+      const name = uniqueSetName(typeof s.name === 'string' ? s.name : file.name.replace(/\.json$/i, ''));
+      const ns = { id: newId(), name, topics };
+      sets.push(ns);
+      added.push(ns);
+    });
+
+    if (!added.length) { showToast('No topics found in that file'); return; }
+    if (spinning) { saveTopics(); renderSetPanel(); }
+    else activateSet(added[0].id);
+    showToast(added.length === 1 ? `Imported "${added[0].name}"` : `Imported ${added.length} sets`);
+  };
+  reader.readAsText(file);
+}
+
+document.getElementById('setName').addEventListener('input', e => {
+  activeSet().name = e.target.value;
+  saveTopics();
+  const opt = document.querySelector(`#setSelect option[value="${activeSetId}"]`);
+  if (opt) opt.textContent = `${e.target.value || 'Untitled Set'} (${topicsData.length})`;
+  updateTopicCount();
+});
+
+document.getElementById('setName').addEventListener('change', e => {
+  // On leaving the field, keep names non-empty and unique.
+  const cur = activeSet();
+  const others = sets.filter(s => s.id !== cur.id);
+  let base = e.target.value.trim() || 'Untitled Set', n = base, i = 2;
+  while (others.some(s => s.name === n)) n = `${base} (${i++})`;
+  cur.name = n;
+  saveTopics();
+  renderSetPanel();
+  updateTopicCount();
+});
+
+document.getElementById('slotMachine').addEventListener('keydown', e => {
+  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); spin(); }
+});
+
+document.getElementById('timerMin').addEventListener('change', applyTimerSetting);
+document.getElementById('timerSec').addEventListener('change', applyTimerSetting);
+
+/* ═══════════════════════════════════════════
+   MAIN UI
+═══════════════════════════════════════════ */
+function refreshMainUI() {
+  updateTopicCount();
+  renderPills();
+  renderSetPanel();
+}
+
+function updateTopicCount() {
+  const n = topicsData.length;
+  const setName = sets.length > 1 ? `${activeSet().name || 'Untitled Set'} · ` : '';
+  document.getElementById('topicCount').textContent = `${setName}${n} topic${n !== 1 ? 's' : ''} available`;
+}
+
+function renderPills() {
+  const row = document.getElementById('pillsRow');
+  row.innerHTML = '';
+  activePill = null;
+  topicsData.forEach((t, i) => {
+    const pill = document.createElement('button');
+    pill.className = 'topic-pill';
+    pill.textContent = t.name;
+    pill.addEventListener('click', () => {
+      if (spinning) return;
+      selectTopic(t);
+      setActivePill(pill);
+    });
+    row.appendChild(pill);
+  });
+}
+
+function setActivePill(el) {
+  if (activePill) activePill.classList.remove('active');
+  activePill = el;
+  if (el) el.classList.add('active');
+}
+
+function clearDisplay() {
+  const display = document.getElementById('slotDisplay');
+  display.className = 'slot-display idle';
+  setSlotText('Spin to pick a topic');
+  hideTimerCard();
+  document.getElementById('topicPrev').innerHTML = '';
+  lastTopic = null;
+}
+
+function spin() {
+  if (spinning || topicsData.length === 0) return;
+  spinning = true;
+  setActivePill(null);
+
+  const box = document.getElementById('slotMachine');
+  const display = document.getElementById('slotDisplay');
+  const prev = document.getElementById('topicPrev');
+
+  box.classList.add('busy');
+  hideTimerCard();
+
+  const pool = lastTopic
+    ? topicsData.filter(t => t.name !== lastTopic.name)
+    : topicsData;
+  const finalPool = pool.length > 0 ? pool : topicsData;
+  const chosen = finalPool[Math.floor(Math.random() * finalPool.length)];
+
+  display.className = 'slot-display spinning';
+
+  const totalSpins = 22 + Math.floor(Math.random() * 10);
+  let count = 0;
+  let delay = 70;
+
+  function cycle() {
+    const rand = topicsData[Math.floor(Math.random() * topicsData.length)];
+    setSlotText(rand.name);
+    count++;
+
+    if (count >= totalSpins) {
+      clearInterval(spinInterval);
+      display.className = 'slot-display stopped';
+      setSlotText(chosen.name);
+      spinning = false;
+      box.classList.remove('busy');
+
+      if (lastTopic) prev.innerHTML = `Last: <span>${escHtml(lastTopic.name)}</span>`;
+      lastTopic = chosen;
+
+      const pills = document.querySelectorAll('.topic-pill');
+      const matchingPill = [...pills].find(p => p.textContent === chosen.name);
+      if (matchingPill) setActivePill(matchingPill);
+
+      showTimerCard(chosen);
+      return;
+    }
+
+    if (count > totalSpins - 7) {
+      clearInterval(spinInterval);
+      delay += 55;
+      spinInterval = setInterval(cycle, delay);
+    }
+  }
+
+  spinInterval = setInterval(cycle, delay);
+}
+
+// Keep the topic on one line by shrinking it (down to 60% of the normal size);
+// a topic still too long after that wraps onto two lines at that small size. The box height
+// is fixed in CSS, so it never jumps while spinning.
+function setSlotText(text) {
+  const span = document.querySelector('#slotDisplay .slot-text');
+  span.textContent = text;
+  fitSlotText();
+}
+
+function fitSlotText() {
+  const box = document.getElementById('slotDisplay');
+  const span = box.querySelector('.slot-text');
+  span.style.fontSize = '';
+  span.style.whiteSpace = '';
+  const maxW = box.clientWidth, maxH = box.clientHeight;
+  if (!maxW || !maxH) return;
+  const base = parseFloat(getComputedStyle(span).fontSize);
+  let size = base;
+  const minOneLine = Math.max(16, base * 0.6);
+  while (span.scrollWidth > maxW && size > minOneLine) {
+    size -= 1;
+    span.style.fontSize = size + 'px';
+  }
+  if (span.scrollWidth <= maxW) return;
+  // Wrapped text starts no bigger than the smallest one-line size, so a longer
+  // topic never shows larger than a shorter one.
+  span.style.whiteSpace = 'normal';
+  span.style.fontSize = size + 'px';
+  while ((span.offsetHeight > maxH || span.scrollWidth > maxW) && size > 12) {
+    size -= 1;
+    span.style.fontSize = size + 'px';
+  }
+}
+
+window.addEventListener('resize', fitSlotText);
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitSlotText);
+
+function selectTopic(topic) {
+  const display = document.getElementById('slotDisplay');
+  const prev = document.getElementById('topicPrev');
+  if (lastTopic) prev.innerHTML = `Last: <span>${escHtml(lastTopic.name)}</span>`;
+  lastTopic = topic;
+  display.className = 'slot-display stopped';
+  setSlotText(topic.name);
+  showTimerCard(topic);
+}
+
+/* ═══════════════════════════════════════════
+   TIMER
+═══════════════════════════════════════════ */
+function fmtTime(sec) {
+  return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
+}
+
+function showTimerCard(topic) {
+  const card = document.getElementById('timerCard');
+  document.getElementById('cardTopic').textContent = topic.name;
+  resetTimer();
+
+  card.style.display = 'block';
+  card.style.opacity = '0';
+  card.style.transform = 'translateY(24px)';
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      card.style.transition = 'opacity 0.45s ease, transform 0.45s ease';
+      card.style.opacity = '1';
+      card.style.transform = 'translateY(0)';
+      card.classList.add('visible');
+      setTimeout(() => card.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100);
+    });
+  });
+}
+
+function hideTimerCard() {
+  stopTicking();
+  timer.running = false;
+  const card = document.getElementById('timerCard');
+  card.classList.remove('visible', 'running', 'done');
+  card.style.display = 'none';
+}
+
+function renderTimer() {
+  const card = document.getElementById('timerCard');
+  const sec = Math.ceil(timer.remainingMs / 1000);
+  document.getElementById('timerDisplay').textContent = fmtTime(sec);
+  document.getElementById('timerBar').style.width = `${(timer.remainingMs / (timerSeconds * 1000)) * 100}%`;
+  card.classList.toggle('running', timer.running);
+  card.classList.toggle('done', timer.done);
+
+  const btn = document.getElementById('timerStartBtn');
+  const status = document.getElementById('timerStatus');
+  if (timer.done) { btn.textContent = 'START'; status.textContent = "Time's up!"; }
+  else if (timer.running) { btn.textContent = 'PAUSE'; status.textContent = 'Speaking…'; }
+  else if (timer.remainingMs < timerSeconds * 1000) { btn.textContent = 'RESUME'; status.textContent = 'Paused'; }
+  else { btn.textContent = 'START'; status.textContent = 'Ready'; }
+}
+
+function stopTicking() {
+  if (timer.tick) { clearInterval(timer.tick); timer.tick = null; }
+}
+
+function toggleTimer() {
+  unlockAudio();
+  if (timer.running) {
+    // Pause
+    timer.remainingMs = Math.max(0, timer.endAt - Date.now());
+    timer.running = false;
+    stopTicking();
+  } else {
+    // Start or resume (a finished timer starts again from the top)
+    if (timer.done) { timer.done = false; timer.remainingMs = timerSeconds * 1000; }
+    timer.running = true;
+    timer.endAt = Date.now() + timer.remainingMs;
+    stopTicking();
+    timer.tick = setInterval(onTick, 100);
+  }
+  renderTimer();
+}
+
+function onTick() {
+  timer.remainingMs = Math.max(0, timer.endAt - Date.now());
+  if (timer.remainingMs <= 0) {
+    timer.running = false;
+    timer.done = true;
+    stopTicking();
+    beep();
+  }
+  renderTimer();
+}
+
+function resetTimer() {
+  stopTicking();
+  timer.running = false;
+  timer.done = false;
+  timer.remainingMs = timerSeconds * 1000;
+  renderTimer();
+}
+
+// A short beep when time is up. Browsers only allow sound after a tap,
+// so the audio is unlocked when Start is pressed.
+let audioCtx = null;
+function unlockAudio() {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+  } catch(e) { audioCtx = null; }
+}
+
+function beep() {
+  if (!audioCtx) return;
+  try {
+    [0, 0.3, 0.6].forEach(offset => {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = 880;
+      const t0 = audioCtx.currentTime + offset;
+      gain.gain.setValueAtTime(0.0001, t0);
+      gain.gain.exponentialRampToValueAtTime(0.3, t0 + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.22);
+      osc.connect(gain).connect(audioCtx.destination);
+      osc.start(t0);
+      osc.stop(t0 + 0.25);
+    });
+  } catch(e) {}
+}
+
+/* ═══════════════════════════════════════════
+   TOAST
+═══════════════════════════════════════════ */
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+/* ═══════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════ */
+loadTimerSetting();
+loadTopics();
+refreshMainUI();
+resetTimer();
+</script>
+</body>
+</html>
